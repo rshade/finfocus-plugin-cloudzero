@@ -303,7 +303,9 @@ OpenSpec is how this repo changes behaviour. The CLI is pinned in `mise.toml` as
 
 - The documented costs limit is 60 requests a day. Do not loop on 429
 - `Retry-After` and `X-RateLimit-*` are not in the docs. Do not depend on them
-- Return `codes.ResourceExhausted` with a retry-tomorrow message
+- Return `codes.ResourceExhausted`. The limit is a rolling 24 hours, not a
+  calendar day: the live 429 body says "Please wait N minute(s)", and other
+  callers on the same key or organization count toward it
 
 ### Cache Invalidation
 
