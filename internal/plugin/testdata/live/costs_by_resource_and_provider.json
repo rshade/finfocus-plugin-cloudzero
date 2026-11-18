@@ -1,0 +1,450 @@
+{
+  "costs": [
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.00014722,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-41e53983084d5d356",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.00020278,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-58b8e8002834faa8d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.00022639,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-632a6f720c7187bb9",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.000254165,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-63c883ac3bef83370",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.00017361,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-64981d03f8457f32c",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.000222225,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:elastic-ip:eipalloc-698190418f4f34e9c",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.14822021759999995,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-0b06f690c5d215ed7",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.0089844352,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-1f8a75854fde45497",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.8551333200000002,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-2c6d38bc33badcf41",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.14833578239999998,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-4f7d07da51765a5b0",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.14843978239999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-4f7fa44e4b4d2869b",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 3.588759782399999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-519fb3d7cb42f3e80",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.003240217599999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-519fb3d7cb42f3e80",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.0007164236000000001,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-6a5f7bcea5f39e887",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 3.588878217599999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-80f10b7b256d716c6",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.003121782399999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-80f10b7b256d716c6",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.14833866319999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-a880f12f645458c03",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 3.588878217599999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-afc46c05d55940e08",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.009676673599999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-afc46c05d55940e08",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 3.588823336799999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-bb764cf21cd1099a7",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.003176663199999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-bb764cf21cd1099a7",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.14833578239999998,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-bbaa54fe8f1c9123f",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 3.5888204455999992,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-bf92369bf6a140cd1",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.003179554399999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-bf92369bf6a140cd1",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 20.704766700000004,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-db5132d1d0af7e819",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 23.131933320000005,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:instance:i-db5132d1d0af7e819",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 15.660868463,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-2ba4e48a2b1da1801",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 17.4737716151,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-2ba4e48a2b1da1801",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.7283952618999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-76d6f401168114b21",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.6995991397000001,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-a7ea9c86a3eed3983",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.051200238099999996,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-aefa5616218800645",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 15.785454936,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-bb15ecf33baa2692f",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 17.575212163400003,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-bb15ecf33baa2692f",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.045001439,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-d57e194bfb6a6690d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.071466665,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-66291beb4d76bd79a",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 1.7254486100000002,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-7c2ac23d20020426f",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 1.935,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-7c2ac23d20020426f",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.0002625,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-8aad26049a3dd10da",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.071470835,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-a729b1705671c8b11",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.002244445,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-a8630f5096f00df5e",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 1.72542222,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-d64509178edf52e92",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 1.9350000000000003,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:network-interface:eni-d64509178edf52e92",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.3720429952,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-0009c0d553b61bc5a",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.4255555464999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-0009c0d553b61bc5a",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.015343786699999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-3864377d1bba48b52",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 1.3951612944,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-69e15b0febeb56c6e",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 1.5958333413000005,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-69e15b0febeb56c6e",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 4.10494e-05,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-6c8b8ab634dbcd02b",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.3720429976,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-769e7448cbd5d537d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.4255555282999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-769e7448cbd5d537d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.37204300479999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-7754eceb14583c858",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.42555553689999986,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-7754eceb14583c858",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.3720429976,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-7fe0d1b8e1f66220d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.4255555416999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-7fe0d1b8e1f66220d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.0004882716,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-98740464e417560b7",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.015353643699999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-af1a89d8ec148c196",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.015344681799999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-b11e0d894cd857e5d",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.015330943599999997,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-c34444bc0d5adabba",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.015342592399999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-e16b871b7dc0adaa8",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.3720430024,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-e4dbe3f1524c5b85c",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.4255555322999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-e4dbe3f1524c5b85c",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.05748879979999999,
+      "Resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-fc82fc6de738d6c3c",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 0.0,
+      "Resource": "czrn:aws:glue:us-west-2:123456789012:service-usage:USW2-Catalog-Request",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 0.0,
+      "Resource": "czrn:aws:glue:us-west-2:123456789012:service-usage:USW2-Catalog-Request",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 2e-05,
+      "Resource": "czrn:aws:s3:cross-region:123456789012:service-usage:USW2-Requests-Tier1",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 3.5000000000000004e-05,
+      "Resource": "czrn:aws:s3:cross-region:123456789012:service-usage:USW2-Requests-Tier1",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 1.6e-09,
+      "Resource": "czrn:aws:s3:cross-region:123456789012:service-usage:USW2-USE1-AWS-Out-Bytes",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-10-01T00:00:00+00:00",
+      "cost": 4.8e-06,
+      "Resource": "czrn:aws:s3:us-west-2:123456789012:bucket:example-bucket",
+      "CloudProvider": "AWS"
+    },
+    {
+      "usage_date": "2026-11-01T00:00:00+00:00",
+      "cost": 3.2e-06,
+      "Resource": "czrn:aws:s3:us-west-2:123456789012:bucket:example-bucket",
+      "CloudProvider": "AWS"
+    }
+  ],
+  "pagination": {
+    "page_count": 1,
+    "item_count": 69,
+    "total_count": 69,
+    "cursor": {
+      "next_cursor": null,
+      "previous_cursor": null,
+      "has_next": false,
+      "has_previous": false
+    }
+  },
+  "sorting": {
+    "available": {
+      "sort_keys": [
+        "usage_date"
+      ],
+      "sort_orders": [
+        "asc"
+      ]
+    },
+    "current": [
+      {
+        "sort_key": "usage_date",
+        "sort_order": "asc"
+      }
+    ]
+  },
+  "filtering": {
+    "available": [],
+    "current": {}
+  },
+  "total_count": 69
+}
