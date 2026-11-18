@@ -305,6 +305,15 @@ tag must be plain `v0.1.0` (`include-component-in-tag` is false).
   `arn`, `resource_id`. The first one that yields a CZRN wins.
 - `make cover` (`scripts/check-coverage.sh`) gates coverage at the plan.md
   CZ-15 targets: 80% overall, 95% on `internal/czclient` and `internal/plugin`.
+- `CHANGELOG.md` is not tracked until release-please creates it in the release
+  PR. GoReleaser packs it with the optional glob `CHANGELOG*.md`; a literal
+  `CHANGELOG.md` fails snapshot builds when the file is absent.
+- `markdownlint-cli2` ignores `.markdownlintignore`. Its excludes live in
+  `.markdownlint-cli2.jsonc` (`ignores`). `.markdownlintignore` is kept for
+  the editor extension.
+- In this tree `gh` is a mise shim, and `../mise.toml` loads a fine-grained
+  `GH_TOKEN` that cannot write secrets or read PR check rollups here. Use
+  `env -u GH_TOKEN /usr/bin/gh` for those.
 - `align_to_granularity` is a documented costs parameter (facts §3). The
   research facts in `finfocus-pm` are more complete than `docs/design.md`.
 - `finfocus-spec` v0.7.12 matches core. v0.7.4 added `GetActualCostRequest.resource`.
