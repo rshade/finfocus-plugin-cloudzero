@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	pluginName       = "finfocus-plugin-cloudzero"
+	pluginName       = "cloudzero"
 	defaultBatchSize = 100
 )
 

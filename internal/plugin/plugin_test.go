@@ -40,7 +40,8 @@ func TestInfoDeclaresActualAndBatchOnly(t *testing.T) {
 	got, err := server.GetPluginInfo(context.Background(), &pbc.GetPluginInfoRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, info.Capabilities, got.GetCapabilities())
-	assert.Equal(t, pluginName, fakePlugin(config.Config{}, &fakeCosts{}).Name())
+	assert.Equal(t, "cloudzero", got.GetName())
+	assert.Equal(t, "cloudzero", fakePlugin(config.Config{}, &fakeCosts{}).Name())
 }
 
 func TestSupports(t *testing.T) {
