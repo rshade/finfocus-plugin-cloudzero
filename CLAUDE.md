@@ -210,16 +210,33 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 - **Errors**: 400, 403, 410, and 429. 401 is not documented. Treat it as an auth failure.
   A 403 on dimensions uses `{"message":"..."}`. Other errors use `{"error":{"message","type"}}`
 
-### Unverified (requires a sandbox key)
+### Verified live on 2026-11-17 (initial-30 `dev` stack, AWS only)
 
-- Whether any dimension is one row per resource, and the value spelling
+- `Resource` is one row per resource, valued as a CZRN such as
+  `czrn:aws:ec2:us-west-2:<account>:nat-gateway:nat-0abc`
+- `CloudProvider` is `AWS`. Bare-key auth works
+- Pulumi state has no ARN for `aws:ec2/natGateway`. The plugin matches bare AWS
+  ids (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) by CZRN suffix
+- Root EBS volumes and an Elastic IP's IPv4 charge are separate CZRNs
+  (`volume`, `network-interface`), so they are not in any stack resource
+
+### Unverified
+
 - Azure and GCP `CloudProvider` values
 - Whether `end_date` is inclusive
 - Whether a bad key is 401 or 403 on the wire
 - Currency of `cost`, and how fresh the newest day is
 - Whether the 60 request limit is per key or per organization
 
-**Action**: The owner runs the capture plan in `plan.md` phase K. Do not call the live API from an agent session.
+**Action**: Live calls need the owner's go-ahead. Credentials come from ESC
+`finfocus-dev/cloudzero` through `esc run`. `esc run` expands `$VAR` in its
+own arguments, so put shell checks in a script file.
+
+To check against a real stack, export a past state with resources
+(`pulumi stack export --version N`) and run `finfocus cost actual
+--pulumi-state <file>` with only this plugin installed in a throwaway
+`FINFOCUS_HOME`. Do not pass `--adapter cloudzero`: core matches `--adapter`
+against `Name()`, which is `finfocus-plugin-cloudzero`.
 
 ## Dependencies
 

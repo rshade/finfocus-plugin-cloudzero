@@ -7,13 +7,22 @@ dimension is configured.
 ## v0.1.0 limitations
 
 This release is built from CloudZero's public docs and tested with fake HTTP
-responses. It has not been verified against a live CloudZero account.
+responses. On 2026-11-17 it was checked against a live CloudZero account with
+one AWS stack (EC2 instances, NAT gateways, and Elastic IPs in `us-west-2`).
+That check verified the bare-key auth, the costs response shape, one row per
+resource in the `Resource` dimension, the CZRN format for those AWS types,
+and the `AWS` value of `CloudProvider`. Everything else below is still
+unverified.
 
-- Resource-level cost is unproven. Without `CLOUDZERO_RESOURCE_DIMENSION` the
-  plugin declines the resource. It does not return an account or tag slice,
-  because that slice would be counted once per resource in a stack total.
+- Without `CLOUDZERO_RESOURCE_DIMENSION` the plugin declines the resource. It
+  does not return an account or tag slice, because that slice would be counted
+  once per resource in a stack total. `Resource` is the dimension that worked
+  on the live account.
 - `CloudProvider` values for Azure and GCP are assumptions (`Azure`, `GCP`).
-  The documented example is `AWS`.
+- CloudZero attributes some cost to resources that are not in a Pulumi stack.
+  Root EBS volumes are their own `volume` CZRNs, and the public IPv4 charge of
+  an Elastic IP lands on its network interface, not on the EIP. Those amounts
+  are not reported for the instance or the EIP.
 - The costs response has no currency. Results are labelled with
   `CLOUDZERO_CURRENCY`, which defaults to `USD`.
 - `end_date` inclusive or exclusive is not stated in the docs. Queries send a
@@ -71,14 +80,17 @@ a resource tag to a dimension ID you already created in CostFormation, for
 example `Team=User:Defined:Team`.
 
 The Resource dimension is matched with a CloudZero resource name (CZRN).
-CloudZero does not document the CZRN format. The plugin assumes values such as
-`czrn:aws:ec2:us-east-1:<account>:instance:i-abc`, and that shape is unverified
-until it is checked against a live account.
-An id that already starts with `czrn:` is sent unchanged. An AWS ARN is
+CloudZero does not document the CZRN format. Values on the live account look
+like `czrn:aws:ec2:us-west-2:<account>:instance:i-abc`.
+An id that already starts with `czrn:` is used unchanged. An AWS ARN is
 converted: the service and resource type come from the ARN, `natgateway`
-becomes `nat-gateway`, and an empty region becomes `cross-region`. A short
-cloud id such as `i-abc`, or an Azure or GCP id, is not converted. Supply a
-`czrn:` value for those.
+becomes `nat-gateway`, and an empty region becomes `cross-region`.
+
+Some AWS resources have no ARN in Pulumi state, such as a NAT gateway. A bare
+id with a known prefix (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) is matched
+on the end of the CZRN, `:<type>:<id>`, within the resource's region. Its
+query filters on provider and region only, because the account is unknown.
+An Azure or GCP id is not converted. Supply a `czrn:` value for those.
 
 ## CloudZero call shape
 

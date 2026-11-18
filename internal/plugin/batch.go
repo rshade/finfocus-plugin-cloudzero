@@ -7,6 +7,8 @@ import (
 	pbc "github.com/rshade/finfocus-spec/sdk/go/proto/finfocus/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/rshade/finfocus-plugin-cloudzero/internal/mapping"
 )
 
 // BatchCost answers actual-cost batches. Other query types get a per-resource
@@ -39,7 +41,7 @@ func (p *CloudZeroPlugin) BatchCost(ctx context.Context, req *pbc.BatchCostReque
 		key := filterKey(filter.Shared)
 		grouped[key] = append(
 			grouped[key],
-			batchMember{index: i, resource: resource, id: filter.ResourceID, shared: filter.Shared},
+			batchMember{index: i, resource: resource, filter: filter},
 		)
 	}
 	for _, members := range grouped {
@@ -51,20 +53,19 @@ func (p *CloudZeroPlugin) BatchCost(ctx context.Context, req *pbc.BatchCostReque
 type batchMember struct {
 	index    int
 	resource *pbc.ResourceDescriptor
-	id       string
-	shared   map[string]string
+	filter   mapping.Filter
 }
 
 func (p *CloudZeroPlugin) fillGroup(
 	ctx context.Context, results []*pbc.ResourceCostResult, members []batchMember, start, end time.Time,
 ) {
-	rows, err := p.costsFor(ctx, start, end, members[0].shared)
+	rows, err := p.costsFor(ctx, start, end, members[0].filter.Shared)
 	for _, member := range members {
 		if err != nil {
 			results[member.index] = resourceError(member.resource, statusFrom(err))
 			continue
 		}
-		data := &pbc.ActualCostData{Results: p.rowsFor(rows, member.id, start, end)}
+		data := &pbc.ActualCostData{Results: p.rowsFor(rows, member.filter, start, end)}
 		if len(data.GetResults()) == 0 {
 			data.FallbackHint = pbc.FallbackHint_FALLBACK_HINT_RECOMMENDED
 		}

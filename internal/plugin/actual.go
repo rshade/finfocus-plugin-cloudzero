@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rshade/finfocus-plugin-cloudzero/internal/czclient"
+	"github.com/rshade/finfocus-plugin-cloudzero/internal/mapping"
 )
 
 // GetActualCost returns one row per day inside the requested window.
@@ -39,7 +40,7 @@ func (p *CloudZeroPlugin) GetActualCost(
 		p.logger.Warn().Err(mapped).Msg("actual cost query failed")
 		return nil, mapped
 	}
-	return responseFor(p.rowsFor(rows, filter.ResourceID, start, end)), nil
+	return responseFor(p.rowsFor(rows, filter, start, end)), nil
 }
 
 func (p *CloudZeroPlugin) ready() error {
@@ -132,12 +133,12 @@ func (p *CloudZeroPlugin) ttlFor(day time.Time) time.Duration {
 
 func (p *CloudZeroPlugin) rowsFor(
 	rows []czclient.CostRow,
-	resourceID string,
+	filter mapping.Filter,
 	start, end time.Time,
 ) []*pbc.ActualCostResult {
 	out := make([]*pbc.ActualCostResult, 0, len(rows))
 	for _, row := range rows {
-		if row.Dimensions[p.cfg.ResourceDimension] != resourceID {
+		if !filter.Matches(row.Dimensions[p.cfg.ResourceDimension]) {
 			continue
 		}
 		if !overlaps(row.UsageDate, start, end) {

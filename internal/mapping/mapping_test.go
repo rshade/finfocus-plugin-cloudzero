@@ -200,6 +200,101 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 	}
 }
 
+func TestFilterMatchesBareAWSIDBySuffix(t *testing.T) {
+	t.Parallel()
+	mapper := NewMapper(zerolog.Nop(), nil, "Resource")
+	tests := []struct {
+		name       string
+		resource   *pbc.ResourceDescriptor
+		resourceID string
+		want       Filter
+	}{
+		{
+			name:       "nat gateway from legacy resource id",
+			resource:   &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"},
+			resourceID: "nat-0179a226c488dce1c",
+			want: Filter{
+				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				ResourceSuffix: ":nat-gateway:nat-0179a226c488dce1c",
+			},
+		},
+		{
+			name:     "instance from descriptor id",
+			resource: &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2", Id: "i-0abc"},
+			want: Filter{
+				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				ResourceSuffix: ":instance:i-0abc",
+			},
+		},
+		{
+			name: "elastic ip from cloudId tag",
+			resource: &pbc.ResourceDescriptor{
+				Provider: "aws", Region: "us-west-2",
+				Tags: map[string]string{"pulumi:cloudId": "eipalloc-0c51"},
+			},
+			want: Filter{
+				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				ResourceSuffix: ":elastic-ip:eipalloc-0c51",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := mapper.Filter(tt.resource, nil, "", tt.resourceID)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestFilterRejectsBareIDWithoutContext(t *testing.T) {
+	t.Parallel()
+	mapper := NewMapper(zerolog.Nop(), nil, "Resource")
+	tests := []struct {
+		name       string
+		resource   *pbc.ResourceDescriptor
+		resourceID string
+	}{
+		{"unknown prefix", &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"}, "sg-0abc"},
+		{"no region", &pbc.ResourceDescriptor{Provider: "aws"}, "nat-0abc"},
+		{"not aws", &pbc.ResourceDescriptor{Provider: "gcp", Region: "us-central1"}, "i-0abc"},
+		{"empty id after prefix", &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"}, "nat-"},
+		{"path-shaped id", &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"}, "i-0abc/extra"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := mapper.Filter(tt.resource, nil, "", tt.resourceID)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestFilterMatches(t *testing.T) {
+	t.Parallel()
+	const nat = "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-0179"
+	tests := []struct {
+		name   string
+		filter Filter
+		value  string
+		want   bool
+	}{
+		{"exact", Filter{ResourceID: nat}, nat, true},
+		{"exact mismatch", Filter{ResourceID: nat}, nat + "x", false},
+		{"suffix", Filter{ResourceSuffix: ":nat-gateway:nat-0179"}, nat, true},
+		{"suffix of a longer id", Filter{ResourceSuffix: ":nat-gateway:nat-0179"}, nat + "9", false},
+		{"other type", Filter{ResourceSuffix: ":instance:nat-0179"}, nat, false},
+		{"empty filter", Filter{}, nat, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, tt.filter.Matches(tt.value))
+		})
+	}
+}
+
 func TestFilterRejectsMissingIdentity(t *testing.T) {
 	t.Parallel()
 	mapper := NewMapper(zerolog.Nop(), nil, "Resource")

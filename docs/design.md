@@ -90,8 +90,16 @@ the first one that yields a CloudZero resource name (CZRN):
 
 An identifier that already starts with `czrn:` is used unchanged. An AWS ARN
 is converted to `czrn:<provider>:<service>:<region>:<account>:<type>:<id>`.
-CloudZero does not document the CZRN format, so this conversion is
-unverified. Azure and GCP ids are not converted. Supply a `czrn:` value.
+CloudZero does not document the CZRN format. The shape matched a live account
+on 2026-11-17 for EC2 instances, NAT gateways, Elastic IPs, volumes, and
+network interfaces.
+
+When no identifier yields a CZRN, an AWS resource whose bare id has a known
+prefix (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) and whose region is known
+is matched by the CZRN suffix `:<type>:<id>`. A NAT gateway needs this,
+because Pulumi state has no ARN for it. The account is unknown, so that
+resource's query filters on `CloudProvider` and `Region` only. Azure and GCP
+ids are not converted. Supply a `czrn:` value.
 
 **Shared dimensions**: these filter the query. All of them are optional.
 
@@ -220,9 +228,16 @@ on a live account. See the README "v0.1.0 limitations" section.
 - **Pagination**: `pagination.cursor.next_cursor` and `has_next`. 10,000 rows
   per page. A cursor expires after 24 hours (HTTP 410). Restart once
 
-### Still open until a sandbox key exists
+### Verified on a live account (2026-11-17)
 
-- Whether any dimension returns one row per resource
+- Bare-key auth and the costs response shape
+- The `Resource` dimension returns one row per resource, valued as a CZRN
+- `CloudProvider` is `AWS` for AWS resources
+- Root EBS volumes and the IPv4 charge of an Elastic IP are separate CZRNs
+  (`volume` and `network-interface`). They are not part of the instance or the EIP
+
+### Still open
+
 - Azure and GCP `CloudProvider` spellings
 - Whether `end_date` is inclusive
 - Whether a bad key is 401 or 403

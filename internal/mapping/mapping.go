@@ -14,8 +14,22 @@ import (
 type Filter struct {
 	// Shared are dimension IDs other than the resource dimension.
 	Shared map[string]string
-	// ResourceID is the value of the configured resource dimension.
+	// ResourceID is the exact value of the configured resource dimension. It is
+	// empty when only ResourceSuffix is known.
 	ResourceID string
+	// ResourceSuffix is ":<type>:<id>" for an AWS resource that has no ARN,
+	// such as a NAT gateway. Its account is unknown, so rows match on the end
+	// of their CZRN, and Shared has no Account.
+	ResourceSuffix string
+}
+
+// Matches reports whether a resource dimension value from CloudZero belongs
+// to this resource.
+func (f Filter) Matches(value string) bool {
+	if f.ResourceID != "" {
+		return value == f.ResourceID
+	}
+	return f.ResourceSuffix != "" && strings.HasSuffix(value, f.ResourceSuffix)
 }
 
 // Mapper builds CloudZero filters from a resource descriptor.
@@ -37,7 +51,8 @@ func NewMapper(logger zerolog.Logger, tagDimensions map[string]string, resourceD
 // Filter builds filters for a descriptor. Identifiers are tried in order: the
 // descriptor's pulumi:cloudId tag, ARN, and ID, then the legacy tags, arn,
 // and resourceID fields. The first one that yields a CZRN identifies the
-// resource.
+// resource. When none does, an AWS resource with a known id prefix and a
+// region is matched by CZRN suffix instead.
 func (m *Mapper) Filter(
 	resource *pbc.ResourceDescriptor,
 	tags map[string]string,
@@ -48,12 +63,17 @@ func (m *Mapper) Filter(
 	}
 	ids := identifiersOf(resource, tags, arn, resourceID)
 	region := ids.region(resource)
-	id, ok := ids.czrn(region)
-	if !ok {
+	provider, knownProvider := cloudProvider(resource.GetProvider())
+	filter := Filter{Shared: map[string]string{}, ResourceID: "", ResourceSuffix: ""}
+	if id, ok := ids.czrn(region); ok {
+		filter.ResourceID = id
+	} else if suffix, found := ids.awsSuffix(); found && provider == awsCloudProvider && region != "" {
+		filter.ResourceSuffix = suffix
+	} else {
 		return Filter{}, errors.New("cannot build a czrn for this resource")
 	}
-	shared := map[string]string{}
-	if provider, known := cloudProvider(resource.GetProvider()); known {
+	shared := filter.Shared
+	if knownProvider {
 		shared["CloudProvider"] = provider
 	}
 	if account := ids.account(); account != "" {
@@ -65,7 +85,7 @@ func (m *Mapper) Filter(
 		shared["Region"] = region
 	}
 	m.addTagFilters(shared, resource, tags)
-	return Filter{Shared: shared, ResourceID: id}, nil
+	return filter, nil
 }
 
 func (m *Mapper) addTagFilters(shared map[string]string, resource *pbc.ResourceDescriptor, tags map[string]string) {
@@ -94,6 +114,21 @@ func (ids identifiers) czrn(fallbackRegion string) (string, bool) {
 	for _, id := range ids {
 		if czrn, ok := resourceCZRN(id, fallbackRegion); ok {
 			return czrn, true
+		}
+	}
+	return "", false
+}
+
+// awsSuffix returns ":<type>:<id>" for the first identifier that is a bare AWS
+// id with a known prefix, such as nat-0abc.
+func (ids identifiers) awsSuffix() (string, bool) {
+	for _, id := range ids {
+		prefix, rest, ok := strings.Cut(id, "-")
+		if !ok || rest == "" || strings.ContainsAny(rest, ":/") {
+			continue
+		}
+		if czrnType, known := awsIDTypes[prefix]; known {
+			return ":" + czrnType + ":" + id, true
 		}
 	}
 	return "", false
@@ -133,7 +168,7 @@ func (ids identifiers) region(resource *pbc.ResourceDescriptor) string {
 func cloudProvider(name string) (string, bool) {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "aws", "aws-native":
-		return "AWS", true
+		return awsCloudProvider, true
 	case "azure", "azure-native", "azurerm":
 		return "Azure", true
 	case "gcp", "google", "google-native":

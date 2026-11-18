@@ -13,7 +13,19 @@ const (
 	awsProvider = "aws"
 	s3Service   = "s3"
 	bucketType  = "bucket"
+
+	awsCloudProvider = "AWS"
 )
+
+// awsIDTypes maps the prefix of a bare AWS id to its CZRN resource type. The
+// pairs were observed in CloudZero CZRNs on 2026-11-17.
+var awsIDTypes = map[string]string{
+	"i":        "instance",
+	"vol":      "volume",
+	"eni":      "network-interface",
+	"nat":      "nat-gateway",
+	"eipalloc": "elastic-ip",
+}
 
 // arn holds the colon-separated fields of an ARN. resource keeps any colons
 // that follow the fifth separator.

@@ -72,6 +72,29 @@ func TestGetActualCostSharesOneCallAcrossResources(t *testing.T) {
 	}, queries[0].Filters)
 }
 
+func TestGetActualCostMatchesResourceWithoutARN(t *testing.T) {
+	t.Parallel()
+	costs := &fakeCosts{rows: []czclient.CostRow{
+		costRow(day(2026, 11, 1), 1.07, "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-0179a226c488dce1c"),
+		costRow(day(2026, 11, 1), 0.73, "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-03630e0dafade45e0"),
+		costRow(day(2026, 11, 1), 0.33, "czrn:aws:ec2:us-west-2:123456789012:instance:i-0132332764cf43141"),
+	}}
+	plug := fakePlugin(readyConfig(), costs)
+	plug.now = func() time.Time { return day(2026, 11, 18) }
+	resp, err := plug.GetActualCost(context.Background(), &pbc.GetActualCostRequest{
+		Start:      timestamppb.New(day(2026, 11, 1)),
+		End:        timestamppb.New(day(2026, 11, 2)),
+		ResourceId: "nat-0179a226c488dce1c",
+		Resource:   &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"},
+	})
+	require.NoError(t, err)
+	require.Len(t, resp.GetResults(), 1)
+	assert.InDelta(t, 1.07, resp.GetResults()[0].GetCost(), 0)
+	queries := costs.calls()
+	require.Len(t, queries, 1)
+	assert.Equal(t, map[string][]string{"CloudProvider": {"AWS"}, "Region": {"us-west-2"}}, queries[0].Filters)
+}
+
 func TestGetActualCostEmptyIsNoData(t *testing.T) {
 	t.Parallel()
 	plug := fakePlugin(readyConfig(), &fakeCosts{})
