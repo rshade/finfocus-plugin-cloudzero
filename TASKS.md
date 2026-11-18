@@ -35,7 +35,7 @@ CLAUDE.md).
 | 6.2 Integration tests | Fake conformance is in `test/conformance`. The live test passed on 2026-11-18 |
 | 6.3 Docs | README, CLAUDE.md, and docs/design.md record what the live check verified |
 | 7.0 Release tooling | Release guards, Renovate, and workflows follow the family plugins. Renovate is onboarded |
-| 7.1 Registry entry | Core PR rshade/finfocus#2200. A fresh `FINFOCUS_HOME` installs v0.1.0 with a verified checksum |
+| 7.1 Registry entry | Core PR `rshade/finfocus#2200`. A fresh `FINFOCUS_HOME` installs v0.1.0 with a verified checksum |
 | 7.2 Release workflow | release-please. v0.1.0 has six archives and `checksums.txt` |
 
 ## Phase K (live CloudZero)
