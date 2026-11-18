@@ -246,19 +246,23 @@ on a live account. See the README "v0.1.0 limitations" section.
   key or organization. The 429 body says how many minutes to wait
 - Root EBS volumes and the IPv4 charge of an Elastic IP are separate CZRNs
   (`volume` and `network-interface`). They are not part of the instance or the EIP
+- `end_date` is exclusive (2026-11-18): a query ending at `2026-11-12T00:00:00Z`
+  returns days up to 2026-11-11
+- Data is near real time (2026-11-18): the current UTC day appears as a partial
+  row, and the previous day is present. When a day becomes final was not measured
 
 ### Still open
 
 - Azure and GCP `CloudProvider` spellings. The owner's organization has AWS
   data only
-- Whether `end_date` is inclusive, and how fresh the newest day is
 - Currency of `cost` for a non-USD account
 
 ### Date range and dimensions
 
 `start_date` and `end_date` are ISO 8601 datetimes. This plugin sends UTC.
-Whether `end_date` is inclusive is still open, so the query uses a month
-boundary and the plugin keeps days that overlap the request.
+`end_date` is exclusive, so a month query from the first of the month to the
+first of the next covers exactly that month. The plugin keeps the days that
+overlap the request.
 
 Dimension IDs in the docs include `Account`, `Service`, `CloudProvider`, and
 `Region`. Tag and custom dimensions are per account. Configure them. Do not

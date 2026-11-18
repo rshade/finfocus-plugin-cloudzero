@@ -27,8 +27,9 @@ unverified.
   are not reported for the instance or the EIP.
 - The costs response has no currency. Results are labelled with
   `CLOUDZERO_CURRENCY`, which defaults to `USD`.
-- `end_date` inclusive or exclusive is not stated in the docs. Queries send a
-  month-aligned window and keep the days that overlap the request.
+- `--adapter` cannot select this plugin yet. Registry discovery matches the
+  install name `cloudzero`, and core then matches the plugin's reported name,
+  `finfocus-plugin-cloudzero`. Omit `--adapter`. See #17.
 - A bad key is documented as 403. The client treats 401 the same way.
 - There is no `Retry-After` or `X-RateLimit-*` header in the docs.
 
