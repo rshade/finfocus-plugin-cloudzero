@@ -1,5 +1,14 @@
-// markdownlint-cli2 does not read .markdownlintignore. release-please writes
-// CHANGELOG.md, so it is excluded here. Rules stay in .markdownlint.json.
+// markdownlint-cli2 does not read .markdownlintignore, so excludes live here.
+// Rules stay in .markdownlint.json. None of these files is project prose:
+// - Release Please writes CHANGELOG.md.
+// - `openspec init` writes the openspec-* skills, and `openspec update`
+//   overwrites hand edits. .claude/skills links to .agents/skills.
+// - OpenSpec delta specs start with `## ADDED Requirements` by format (MD041).
 {
-  "ignores": ["CHANGELOG.md"]
+  "ignores": [
+    "CHANGELOG.md",
+    ".agents/skills/openspec-*/**",
+    ".claude/skills/openspec-*/**",
+    "openspec/changes/**/specs/**"
+  ]
 }

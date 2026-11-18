@@ -259,9 +259,27 @@ against `Name()`, which is `finfocus-plugin-cloudzero`.
 - golangci-lint: Linting
 - gofmt: Code formatting
 
+## OpenSpec
+
+OpenSpec is how this repo changes behaviour. The CLI is pinned in `mise.toml` as
+`npm:@fission-ai/openspec`, so run it as `mise exec -- openspec ...`.
+
+- **Propose, apply, verify, archive** for a change to an RPC, the config surface,
+  the CloudZero query shape, the resource mapping, or the cost arithmetic. Use the
+  `openspec-*` skills. The archive lands in the same commit as the code.
+- **Direct** for tests only, docs only, CI, and a bug fix with no surface change.
+  Do not send a one-file fix through OpenSpec.
+- `openspec/specs/` holds current behaviour once changes are archived. It starts
+  empty, because v0.1.0 predates OpenSpec.
+- `openspec/config.yaml` carries the project context and the spec rules. Quote
+  any rule that contains a colon: OpenSpec 2 refuses a config that does not parse.
+- `openspec init` wrote the skills into `.agents/skills/`, and `.claude/skills/`
+  links to them. `openspec update` overwrites hand edits, so markdownlint ignores
+  them.
+
 ## Development Workflow
 
-1. **Read the task** in TASKS.md
+1. **Read the task** in TASKS.md, or the active OpenSpec change
 2. **Write tests first** (TDD) - place in same package with `_test.go` suffix
 3. **Implement feature** to pass tests
 4. **Run validation**: `make validate` (fmt, vet, test, cover, lint, vuln)

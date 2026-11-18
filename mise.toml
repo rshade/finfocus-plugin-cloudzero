@@ -31,6 +31,10 @@ vale = "3.27.0"
 # Commit message linting.
 "npm:@commitlint/cli" = "21.2.4"
 "npm:@commitlint/config-conventional" = "21.2.4"
+# ---------------------------------------------------------------- openspec
+# Spec-driven change process. Run it as `mise exec -- openspec ...`.
+# The tool id is the npm package, not `openspec`.
+"npm:@fission-ai/openspec" = "2.1.0"
 
 # GitHub Actions review comments (via the aqua registry).
 "aqua:reviewdog/reviewdog" = "0.21.3"

@@ -1,0 +1,24 @@
+schema: spec-driven
+
+context: |
+  Plugin: finfocus-plugin-cloudzero, a FinFocus actual-cost source for CloudZero.
+  Module: github.com/rshade/finfocus-plugin-cloudzero. Spec: finfocus-spec v0.7.12.
+  CloudZero allows 60 cost requests a day. Cursor pages are free. Never loop on 429.
+  CLOUDZERO_DAILY_BUDGET counts every first-page attempt, retries included.
+  One query per month and shared filter set serves every resource in it. Filter only
+  on Account, Region, and configured tag dimensions. Never filter on the resource or
+  on CloudProvider. CloudProvider is case-sensitive with undocumented spellings, so the
+  query groups by it and rows match the resource provider ignoring case.
+  Projected cost, pricing spec, and estimate return Unimplemented. Never return $0
+  for them: core treats $0 as a real price.
+  Verified live on 2026-11-17 for AWS only. Azure and GCP behaviour is unverified.
+  Live CloudZero calls need the owner's go-ahead. Credentials come from ESC
+  finfocus-dev/cloudzero through esc run.
+  Tests use testify require and assert, t.Parallel, and the plugin.CostSource fake.
+  Release Please owns CHANGELOG.md and the release manifest. Conventional commits.
+  No absolute machine paths in committed files.
+
+rules:
+  specs:
+    - 'Keep each requirement body (the text before its first scenario) at 500 characters or fewer, because openspec validate --strict fails above that. Split a long requirement into two.'
+    - 'End every requirement block, after its last scenario, with one line "Tested by: TestA, TestB" naming top-level Go test functions, or "Tested by: none (reason)".'
