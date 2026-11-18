@@ -223,11 +223,11 @@ func TestFilterMatchesBareAWSIDBySuffix(t *testing.T) {
 		{
 			name:       "nat gateway from legacy resource id",
 			resource:   &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"},
-			resourceID: "nat-0179a226c488dce1c",
+			resourceID: "nat-0123456789abcdef0",
 			want: Filter{
 				Shared:         map[string]string{"Region": "us-west-2"},
 				Provider:       "aws",
-				ResourceSuffix: ":nat-gateway:nat-0179a226c488dce1c",
+				ResourceSuffix: ":nat-gateway:nat-0123456789abcdef0",
 			},
 		},
 		{
