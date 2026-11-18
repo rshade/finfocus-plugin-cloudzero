@@ -10,60 +10,42 @@ This project follows the **OpenSpec** change process (`openspec/specs/`).
 See [CONTEXT.md](./CONTEXT.md) for architectural boundaries. v0.1.0 followed
 [plan.md](./plan.md). Its task record, TASKS.md, was folded into this roadmap.
 
-Most items below are not yet filed as GitHub issues. Items marked
-*(not filed)* need an issue before `/roadmap sync` can track them.
+Each planned item is a GitHub issue. Releases are cut by the owner and are not
+tracked here. Spikes are sized by timebox, not effort: their deliverable is a
+decision recorded in the docs.
 
 ---
 
-## Immediate Focus (v0.1.1)
+## Immediate Focus
 
-**Goal:** ship the first patch release and close the live-check questions that
-only need a couple of CloudZero calls.
+**Goal:** close the live-check questions that only need a couple of CloudZero
+calls.
 
-- Release PR 3 (0.1.1): the rate-limit message drops "retry tomorrow" and now
-  describes the limit as 60 cost requests in a rolling 24 hours. Merge the
-  Renovate update for `google.golang.org/grpc` v1.85.0 first if it should ship
-  in the same release. [S]
-- Settle whether `end_date` is inclusive and how fresh the newest day is. Two
-  calls, blocked on 2026-11-17 by the rolling rate limit. *(not filed)* [S]
-- Confirm `--adapter cloudzero` selects the plugin when it is installed from the
-  registry. One live `finfocus cost actual` run. *(not filed)* [S]
+- [ ] #7 Spike: settle `end_date` inclusivity and CloudZero data freshness
+  *(2-hour timebox)*
+- [ ] #8 Spike: does `--adapter cloudzero` select the plugin? *(2-hour timebox)*
 
-## Near-Term Vision (v0.2.0)
+Release PR 3 (0.1.1) is open and held by the owner.
+
+## Near-Term Vision
 
 **Goal:** let core supply the CloudZero key, and attribute the costs CloudZero
 bills to parts of a stack resource.
 
-- **Per-request credentials and settings advertisement.** Accept the key from
-  `x-finfocus-credential-*` metadata and advertise settings (`finfocus-spec`
-  v0.7.6), so core can deliver the key from ESC and show it in the dashboard.
-  Deferred from v0.1.0 by the owner. *(not filed)* [L]
-- **Root volume cost on the instance.** CloudZero bills an instance's root EBS
-  volume as a separate `volume` CZRN, so the instance result omits it. Pulumi
-  state carries the root volume id, so the plugin can add it to the instance
-  result as a breakdown line. It stays a billed cost of the same resource, not
-  a slice. *(not filed)* [M]
-- **Rate-limit wait time.** The 429 body states how many minutes to wait.
-  Return that number in the `ResourceExhausted` message without forwarding the
-  body. *(not filed)* [S]
+- [ ] #9 Accept the CloudZero key per request and advertise plugin settings [L]
+- [ ] #10 Include the root EBS volume cost in an instance's actual cost [M]
+- [ ] #11 Report the CloudZero rate-limit wait time in the `ResourceExhausted`
+  message [S]
 
 ## Future Vision (Long-Term)
 
-- **Azure and GCP verification.** The owner's CloudZero organization has AWS
-  data only, so the `CloudProvider` matching and CZRN shapes for Azure and GCP
-  are untested. Needs an organization with Azure or GCP billing. Once the CZRN
-  format is known, convert Azure resource ids and GCP resource names the way
-  AWS ARNs are converted today. *(not filed)* [L]
-- **Non-USD currency.** The costs response carries no currency. Check what a
-  non-USD organization returns before trusting `CLOUDZERO_CURRENCY`.
-  *(not filed)* [S]
-- **Large-account paging.** A month query for a big account returns every
-  resource in the account and region. Pages are free, but the client stops at
-  100 pages of 10,000 rows. Measure a large account before raising the cap.
-  *(not filed)* [M]
-- **Elastic IP charges.** CloudZero bills an Elastic IP's public IPv4 charge on
-  its network interface. Decide whether the EIP result should include it through
-  the association of the EIP. *(not filed)* [M]
+- [ ] #12 Spike: verify Azure and GCP resources against CloudZero data
+  *(watch: needs an organization with Azure or GCP data)*
+- [ ] #13 Spike: confirm the currency of CloudZero costs for a non-USD
+  organization *(watch: needs a non-USD organization)*
+- [ ] #14 Spike: measure month-query paging on a large CloudZero account
+  *(watch: needs a large account)*
+- [ ] #15 Attribute the public IPv4 charge of an Elastic IP to the EIP [M]
 
 ## Decisions Carried From v0.1.0
 

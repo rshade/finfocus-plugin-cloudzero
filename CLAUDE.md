@@ -287,9 +287,9 @@ OpenSpec is how this repo changes behaviour. The CLI is pinned in `mise.toml` as
 
 `CONTEXT.md` holds the project boundaries ("Hard No's") and its verification
 checklist. Check a feature against it before proposing it. `ROADMAP.md` holds
-the plan. Most of its items are not filed as issues yet; file one before
-`/roadmap sync` can track it. The Renovate Dependency Dashboard carries
-`roadmap/exclude`.
+the plan, one GitHub issue per item (#7 to #15). Releases are cut by the owner
+and get no issue. Spikes carry `spike` and a `timebox/*` label instead of
+`effort/*`. The Renovate Dependency Dashboard carries `roadmap/exclude`.
 
 ## Development Workflow
 
