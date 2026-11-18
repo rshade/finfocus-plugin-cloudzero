@@ -222,14 +222,17 @@ func TestFilterCloudIdentifiers(t *testing.T) {
   ids (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) by CZRN suffix
 - Root EBS volumes and an Elastic IP's IPv4 charge are separate CZRNs
   (`volume`, `network-interface`), so they are not in any stack resource
+- A bad key returns HTTP 403 with `{"message": ...}`
+- The limit is a rolling 24 hours. The 429 body says "Please wait N minute(s)"
 
 ### Unverified
 
-- Azure and GCP `CloudProvider` values
+- Azure and GCP `CloudProvider` values (the owner's organization has AWS only)
 - Whether `end_date` is inclusive
-- Whether a bad key is 401 or 403 on the wire
 - Currency of `cost`, and how fresh the newest day is
-- Whether the 60 request limit is per key or per organization
+- Whether the 60 request limit is per key or per organization. It is shared
+  with other callers: a 429 arrived after about 14 calls of this project's
+  own
 
 **Action**: Live calls need the owner's go-ahead. Credentials come from ESC
 `finfocus-dev/cloudzero` through `esc run`. `esc run` expands `$VAR` in its
@@ -269,17 +272,28 @@ OpenSpec is how this repo changes behaviour. The CLI is pinned in `mise.toml` as
   `openspec-*` skills. The archive lands in the same commit as the code.
 - **Direct** for tests only, docs only, CI, and a bug fix with no surface change.
   Do not send a one-file fix through OpenSpec.
-- `openspec/specs/` holds current behaviour once changes are archived. It starts
-  empty, because v0.1.0 predates OpenSpec.
+- `openspec/specs/` holds current behaviour: seven capabilities, written as a
+  brownfield baseline of v0.1.0. Every requirement ends with one
+  `Tested by: TestA, TestB` line, or `Tested by: none (reason)`.
+  `test/openspec` fails when a named test is not a `func Test...` in any
+  `_test.go` file, or when `openspec/config.yaml` does not parse.
 - `openspec/config.yaml` carries the project context and the spec rules. Quote
   any rule that contains a colon: OpenSpec 2 refuses a config that does not parse.
 - `openspec init` wrote the skills into `.agents/skills/`, and `.claude/skills/`
   links to them. `openspec update` overwrites hand edits, so markdownlint ignores
   them.
 
+## Roadmap
+
+`CONTEXT.md` holds the project boundaries ("Hard No's") and its verification
+checklist. Check a feature against it before proposing it. `ROADMAP.md` holds
+the plan. Most of its items are not filed as issues yet; file one before
+`/roadmap sync` can track it. The Renovate Dependency Dashboard carries
+`roadmap/exclude`.
+
 ## Development Workflow
 
-1. **Read the task** in TASKS.md, or the active OpenSpec change
+1. **Read the task** in ROADMAP.md, or the active OpenSpec change
 2. **Write tests first** (TDD) - place in same package with `_test.go` suffix
 3. **Implement feature** to pass tests
 4. **Run validation**: `make validate` (fmt, vet, test, cover, lint, vuln)

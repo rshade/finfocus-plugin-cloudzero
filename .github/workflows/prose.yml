@@ -29,7 +29,7 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          vale README.md CLAUDE.md TASKS.md docs/design.md --output=line 2>/dev/null | reviewdog \
+          vale README.md CLAUDE.md ROADMAP.md CONTEXT.md docs/design.md --output=line 2>/dev/null | reviewdog \
             -efm="%f:%l:%c:%m" \
             -name="vale" \
             -reporter=github-pr-review \

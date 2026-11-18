@@ -30,11 +30,11 @@ lint-prose-sync: ## Download/refresh Vale style packages
 .PHONY: lint-prose
 lint-prose: lint-prose-sync ## Lint prose documentation (markdown)
 	@echo "Linting prose..."
-	@vale TASKS.md docs/design.md README.md CLAUDE.md
+	@vale ROADMAP.md CONTEXT.md docs/design.md README.md CLAUDE.md
 
 .PHONY: lint-prose-ci
 lint-prose-ci: ## Vale output in reviewdog line format (used by CI)
-	@vale --no-exit --output=line TASKS.md docs/design.md README.md CLAUDE.md
+	@vale --no-exit --output=line ROADMAP.md CONTEXT.md docs/design.md README.md CLAUDE.md
 
 .PHONY: vuln
 vuln: ## Check for security vulnerabilities

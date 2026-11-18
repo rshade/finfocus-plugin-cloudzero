@@ -239,15 +239,19 @@ on a live account. See the README "v0.1.0 limitations" section.
 
 - Bare-key auth and the costs response shape
 - The `Resource` dimension returns one row per resource, valued as a CZRN
-- `CloudProvider` is `AWS` for AWS resources
+- `CloudProvider` is `AWS` for AWS resources, and the filter is case-sensitive:
+  `aws` matches no rows
+- A bad key returns HTTP 403 with `{"message": ...}`
+- The 60 request limit is a rolling 24 hours, shared with other callers of the
+  key or organization. The 429 body says how many minutes to wait
 - Root EBS volumes and the IPv4 charge of an Elastic IP are separate CZRNs
   (`volume` and `network-interface`). They are not part of the instance or the EIP
 
 ### Still open
 
-- Azure and GCP `CloudProvider` spellings
-- Whether `end_date` is inclusive
-- Whether a bad key is 401 or 403
+- Azure and GCP `CloudProvider` spellings. The owner's organization has AWS
+  data only
+- Whether `end_date` is inclusive, and how fresh the newest day is
 - Currency of `cost` for a non-USD account
 
 ### Date range and dimensions
