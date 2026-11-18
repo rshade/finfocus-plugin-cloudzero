@@ -43,7 +43,7 @@ func TestGetActualCostSlicesMonthAndCaches(t *testing.T) {
 	require.Len(t, queries, 1)
 	assert.Equal(t, day(2026, 3, 1), queries[0].Start)
 	assert.Equal(t, day(2026, 4, 1), queries[0].End)
-	assert.Equal(t, []string{"Resource"}, queries[0].GroupBy)
+	assert.Equal(t, []string{"Resource", "CloudProvider"}, queries[0].GroupBy)
 }
 
 func TestGetActualCostSharesOneCallAcrossResources(t *testing.T) {
@@ -68,7 +68,7 @@ func TestGetActualCostSharesOneCallAcrossResources(t *testing.T) {
 	queries := costs.calls()
 	require.Len(t, queries, 1)
 	assert.Equal(t, map[string][]string{
-		"CloudProvider": {"AWS"}, "Account": {"123456789012"}, "Region": {"us-east-1"},
+		"Account": {"123456789012"}, "Region": {"us-east-1"},
 	}, queries[0].Filters)
 }
 
@@ -92,7 +92,8 @@ func TestGetActualCostMatchesResourceWithoutARN(t *testing.T) {
 	assert.InDelta(t, 1.07, resp.GetResults()[0].GetCost(), 0)
 	queries := costs.calls()
 	require.Len(t, queries, 1)
-	assert.Equal(t, map[string][]string{"CloudProvider": {"AWS"}, "Region": {"us-west-2"}}, queries[0].Filters)
+	assert.Equal(t, map[string][]string{"Region": {"us-west-2"}}, queries[0].Filters)
+	assert.Equal(t, []string{"Resource", "CloudProvider"}, queries[0].GroupBy)
 }
 
 func TestGetActualCostEmptyIsNoData(t *testing.T) {

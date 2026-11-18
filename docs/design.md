@@ -13,7 +13,7 @@ enable cost analysis, drift detection, and multi-cloud cost optimization.
 
 - Actual-cost only. Projected cost, pricing spec, and estimate return `Unimplemented`
 - Multi-cloud support (AWS, Azure, GCP)
-- Filtering by CloudZero dimension IDs (`CloudProvider`, `Account`, `Region`,
+- Filtering by CloudZero dimension IDs (`Account`, `Region`,
   and configured tag dimensions)
 - `expires_at` computed by the plugin. CloudZero sends no TTL
 - Month-aligned queries shared across resources, so one call serves many
@@ -98,12 +98,19 @@ When no identifier yields a CZRN, an AWS resource whose bare id has a known
 prefix (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) and whose region is known
 is matched by the CZRN suffix `:<type>:<id>`. A NAT gateway needs this,
 because Pulumi state has no ARN for it. The account is unknown, so that
-resource's query filters on `CloudProvider` and `Region` only. Azure and GCP
-ids are not converted. Supply a `czrn:` value.
+resource's query filters on `Region` only. Azure and GCP ids are not
+converted. Supply a `czrn:` value.
+
+**Provider**: the query groups by `CloudProvider` and does not filter on it.
+CloudZero's filter is case-sensitive (`AWS` matched 69 rows on the live
+account, `aws` matched none) and its spellings are not documented. Each row
+carries its `CloudProvider` value, and a row matches when that value equals
+the resource's provider ignoring case. The provider is normalized first:
+`-native` is dropped, `azurerm` becomes `azure`, and `google` becomes `gcp`.
+No CloudZero spelling is hardcoded.
 
 **Shared dimensions**: these filter the query. All of them are optional.
 
-- `CloudProvider`: from the provider on the descriptor
 - `Account`: the AWS account in an ARN, the Azure subscription, or the GCP project
 - `Region`: the region on the descriptor, else the region in the ARN
 - Tag dimensions: only the pairs in `CLOUDZERO_TAG_DIMENSIONS`
@@ -117,9 +124,9 @@ Tags: {"Team": "platform"}
 CLOUDZERO_TAG_DIMENSIONS: Team=User:Defined:Team
 
 Resource ID: czrn:aws:ec2:us-east-1:123456789012:instance:i-0abc123
+Provider: aws (rows match CloudProvider "AWS" ignoring case)
 Shared filters:
 {
-  "CloudProvider": "AWS",
   "Account": "123456789012",
   "Region": "us-east-1",
   "User:Defined:Team": "platform"

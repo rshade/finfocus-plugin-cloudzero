@@ -21,15 +21,24 @@ type Filter struct {
 	// such as a NAT gateway. Its account is unknown, so rows match on the end
 	// of their CZRN, and Shared has no Account.
 	ResourceSuffix string
+	// Provider is the resource's provider, normalized to aws, azure, or gcp.
+	// CloudZero's CloudProvider filter is case-sensitive and its spellings are
+	// not documented, so the query groups by CloudProvider instead of
+	// filtering on it, and rows match on that value ignoring case. Empty means
+	// the request carried no provider.
+	Provider string
 }
 
-// Matches reports whether a resource dimension value from CloudZero belongs
-// to this resource.
-func (f Filter) Matches(value string) bool {
-	if f.ResourceID != "" {
-		return value == f.ResourceID
+// Matches reports whether a CloudZero row belongs to this resource, given the
+// row's resource dimension value and its CloudProvider value.
+func (f Filter) Matches(resource, cloudProvider string) bool {
+	if f.Provider != "" && !strings.EqualFold(cloudProvider, f.Provider) {
+		return false
 	}
-	return f.ResourceSuffix != "" && strings.HasSuffix(value, f.ResourceSuffix)
+	if f.ResourceID != "" {
+		return resource == f.ResourceID
+	}
+	return f.ResourceSuffix != "" && strings.HasSuffix(resource, f.ResourceSuffix)
 }
 
 // Mapper builds CloudZero filters from a resource descriptor.
@@ -63,19 +72,16 @@ func (m *Mapper) Filter(
 	}
 	ids := identifiersOf(resource, tags, arn, resourceID)
 	region := ids.region(resource)
-	provider, knownProvider := cloudProvider(resource.GetProvider())
-	filter := Filter{Shared: map[string]string{}, ResourceID: "", ResourceSuffix: ""}
+	provider, _ := providerKey(resource.GetProvider())
+	filter := Filter{Shared: map[string]string{}, ResourceID: "", ResourceSuffix: "", Provider: provider}
 	if id, ok := ids.czrn(region); ok {
 		filter.ResourceID = id
-	} else if suffix, found := ids.awsSuffix(); found && provider == awsCloudProvider && region != "" {
+	} else if suffix, found := ids.awsSuffix(); found && provider == awsProvider && region != "" {
 		filter.ResourceSuffix = suffix
 	} else {
 		return Filter{}, errors.New("cannot build a czrn for this resource")
 	}
 	shared := filter.Shared
-	if knownProvider {
-		shared["CloudProvider"] = provider
-	}
 	if account := ids.account(); account != "" {
 		shared["Account"] = account
 	} else if ids.firstARN() != "" {
@@ -162,25 +168,32 @@ func (ids identifiers) region(resource *pbc.ResourceDescriptor) string {
 	return ""
 }
 
-// cloudProvider maps a FinFocus provider name to the CloudZero CloudProvider
-// value. AWS is the documented example. Azure and GCP spellings are assumptions
-// until a live capture confirms them.
-func cloudProvider(name string) (string, bool) {
-	switch strings.ToLower(strings.TrimSpace(name)) {
-	case "aws", "aws-native":
-		return awsCloudProvider, true
-	case "azure", "azure-native", "azurerm":
-		return "Azure", true
-	case "gcp", "google", "google-native":
-		return "GCP", true
-	default:
-		return "", false
-	}
+const (
+	azureProvider = "azure"
+	gcpProvider   = "gcp"
+)
+
+// providerAliases folds Pulumi and Terraform provider names onto one name per
+// cloud. These are FinFocus provider names, not CloudZero values.
+var providerAliases = map[string]string{
+	awsProvider:   awsProvider,
+	azureProvider: azureProvider,
+	"azurerm":     azureProvider,
+	gcpProvider:   gcpProvider,
+	"google":      gcpProvider,
+}
+
+// providerKey normalizes a FinFocus provider name such as aws-native or
+// google to aws, azure, or gcp.
+func providerKey(name string) (string, bool) {
+	base := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(name)), "-native")
+	key, ok := providerAliases[base]
+	return key, ok
 }
 
 // SupportedProvider reports whether the provider is one this plugin can bill.
 func SupportedProvider(name string) bool {
-	_, ok := cloudProvider(name)
+	_, ok := providerKey(name)
 	return ok
 }
 

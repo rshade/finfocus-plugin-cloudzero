@@ -28,9 +28,10 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 				Tags:     map[string]string{"Team": "platform", "cost_center": "nope"},
 			},
 			want: Filter{
+				Provider:   "aws",
 				ResourceID: "czrn:aws:ec2:us-east-1:123456789012:instance:i-abc",
 				Shared: map[string]string{
-					"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-east-1",
+					"Account": "123456789012", "Region": "us-east-1",
 					"User:Defined:Team": "platform",
 				},
 			},
@@ -42,9 +43,10 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 				Arn:      "arn:aws:ec2:us-west-2:123456789012:natgateway/nat-abc",
 			},
 			want: Filter{
+				Provider:   "aws",
 				ResourceID: "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-abc",
 				Shared: map[string]string{
-					"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-west-2",
+					"Account": "123456789012", "Region": "us-west-2",
 				},
 			},
 		},
@@ -56,9 +58,10 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 				Arn:      "arn:aws:s3:us-east-1:123456789012:photos",
 			},
 			want: Filter{
+				Provider:   "aws",
 				ResourceID: "czrn:aws:s3:us-east-1:123456789012:bucket:photos",
 				Shared: map[string]string{
-					"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-east-1",
+					"Account": "123456789012", "Region": "us-east-1",
 				},
 			},
 		},
@@ -72,9 +75,10 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 				},
 			},
 			want: Filter{
+				Provider:   "aws",
 				ResourceID: "czrn:aws:ec2:us-east-1:123456789012:instance:i-from-tag",
 				Shared: map[string]string{
-					"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-east-1",
+					"Account": "123456789012", "Region": "us-east-1",
 				},
 			},
 		},
@@ -112,21 +116,23 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 		azureCZRN  = "czrn:azure:compute:eastus:sub-1:virtualmachines:vm"
 	)
 	tests := []struct {
-		name       string
-		resource   *pbc.ResourceDescriptor
-		tags       map[string]string
-		arn        string
-		resourceID string
-		wantID     string
-		wantShared map[string]string
+		name         string
+		resource     *pbc.ResourceDescriptor
+		tags         map[string]string
+		arn          string
+		resourceID   string
+		wantID       string
+		wantShared   map[string]string
+		wantProvider string
 	}{
 		{
 			name:     "arn in pulumi cloudId tag",
 			resource: &pbc.ResourceDescriptor{Provider: "aws", Tags: map[string]string{"pulumi:cloudId": ec2ARN}},
 			wantID:   "czrn:aws:ec2:us-east-1:123456789012:instance:i-arn",
 			wantShared: map[string]string{
-				"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-east-1",
+				"Account": "123456789012", "Region": "us-east-1",
 			},
+			wantProvider: "aws",
 		},
 		{
 			name:       "descriptor arn beats a legacy czrn",
@@ -134,8 +140,9 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 			resourceID: legacyCZRN,
 			wantID:     "czrn:aws:ec2:us-east-1:123456789012:instance:i-arn",
 			wantShared: map[string]string{
-				"CloudProvider": "AWS", "Account": "123456789012", "Region": "us-east-1",
+				"Account": "123456789012", "Region": "us-east-1",
 			},
+			wantProvider: "aws",
 		},
 		{
 			name:       "legacy cloudId tag without a descriptor",
@@ -149,8 +156,9 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 				Provider: "azure-native", Region: "eastus", Id: azureID,
 				Tags: map[string]string{"pulumi:cloudId": azureCZRN},
 			},
-			wantID:     azureCZRN,
-			wantShared: map[string]string{"CloudProvider": "Azure", "Account": "sub-1", "Region": "eastus"},
+			wantID:       azureCZRN,
+			wantShared:   map[string]string{"Account": "sub-1", "Region": "eastus"},
+			wantProvider: "azure",
 		},
 		{
 			name: "gcp czrn with project from id",
@@ -158,8 +166,9 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 				Provider: "gcp", Id: "projects/proj-1/zones/us-central1-a/instances/vm",
 				Tags: map[string]string{"pulumi:cloudId": "czrn:gcp:compute:us-central1:proj-1:instance:vm"},
 			},
-			wantID:     "czrn:gcp:compute:us-central1:proj-1:instance:vm",
-			wantShared: map[string]string{"CloudProvider": "GCP", "Account": "proj-1"},
+			wantID:       "czrn:gcp:compute:us-central1:proj-1:instance:vm",
+			wantShared:   map[string]string{"Account": "proj-1"},
+			wantProvider: "gcp",
 		},
 		{
 			name: "short arn is ignored for account",
@@ -167,8 +176,9 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 				Provider: "aws", Arn: "arn:aws:ec2",
 				Tags: map[string]string{"pulumi:cloudId": legacyCZRN},
 			},
-			wantID:     legacyCZRN,
-			wantShared: map[string]string{"CloudProvider": "AWS"},
+			wantID:       legacyCZRN,
+			wantShared:   map[string]string{},
+			wantProvider: "aws",
 		},
 		{
 			name:       "global iam role is cross-region",
@@ -196,6 +206,7 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantID, got.ResourceID)
 			assert.Equal(t, tt.wantShared, got.Shared)
+			assert.Equal(t, tt.wantProvider, got.Provider)
 		})
 	}
 }
@@ -214,7 +225,8 @@ func TestFilterMatchesBareAWSIDBySuffix(t *testing.T) {
 			resource:   &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2"},
 			resourceID: "nat-0179a226c488dce1c",
 			want: Filter{
-				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				Shared:         map[string]string{"Region": "us-west-2"},
+				Provider:       "aws",
 				ResourceSuffix: ":nat-gateway:nat-0179a226c488dce1c",
 			},
 		},
@@ -222,7 +234,8 @@ func TestFilterMatchesBareAWSIDBySuffix(t *testing.T) {
 			name:     "instance from descriptor id",
 			resource: &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2", Id: "i-0abc"},
 			want: Filter{
-				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				Shared:         map[string]string{"Region": "us-west-2"},
+				Provider:       "aws",
 				ResourceSuffix: ":instance:i-0abc",
 			},
 		},
@@ -233,7 +246,8 @@ func TestFilterMatchesBareAWSIDBySuffix(t *testing.T) {
 				Tags: map[string]string{"pulumi:cloudId": "eipalloc-0c51"},
 			},
 			want: Filter{
-				Shared:         map[string]string{"CloudProvider": "AWS", "Region": "us-west-2"},
+				Shared:         map[string]string{"Region": "us-west-2"},
+				Provider:       "aws",
 				ResourceSuffix: ":elastic-ip:eipalloc-0c51",
 			},
 		},
@@ -275,22 +289,26 @@ func TestFilterMatches(t *testing.T) {
 	t.Parallel()
 	const nat = "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-0179"
 	tests := []struct {
-		name   string
-		filter Filter
-		value  string
-		want   bool
+		name     string
+		filter   Filter
+		resource string
+		provider string
+		want     bool
 	}{
-		{"exact", Filter{ResourceID: nat}, nat, true},
-		{"exact mismatch", Filter{ResourceID: nat}, nat + "x", false},
-		{"suffix", Filter{ResourceSuffix: ":nat-gateway:nat-0179"}, nat, true},
-		{"suffix of a longer id", Filter{ResourceSuffix: ":nat-gateway:nat-0179"}, nat + "9", false},
-		{"other type", Filter{ResourceSuffix: ":instance:nat-0179"}, nat, false},
-		{"empty filter", Filter{}, nat, false},
+		{"exact", Filter{ResourceID: nat, Provider: "aws"}, nat, "AWS", true},
+		{"exact mismatch", Filter{ResourceID: nat, Provider: "aws"}, nat + "x", "AWS", false},
+		{"suffix", Filter{ResourceSuffix: ":nat-gateway:nat-0179", Provider: "aws"}, nat, "AWS", true},
+		{"suffix of a longer id", Filter{ResourceSuffix: ":nat-gateway:nat-0179"}, nat + "9", "AWS", false},
+		{"other type", Filter{ResourceSuffix: ":instance:nat-0179"}, nat, "AWS", false},
+		{"provider differs", Filter{ResourceID: nat, Provider: "azure"}, nat, "AWS", false},
+		{"provider row missing", Filter{ResourceID: nat, Provider: "aws"}, nat, "", false},
+		{"no provider on request", Filter{ResourceID: nat}, nat, "", true},
+		{"empty filter", Filter{}, nat, "AWS", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.filter.Matches(tt.value))
+			assert.Equal(t, tt.want, tt.filter.Matches(tt.resource, tt.provider))
 		})
 	}
 }
@@ -316,7 +334,25 @@ func TestFilterRejectsMissingIdentity(t *testing.T) {
 
 func TestSupportedProvider(t *testing.T) {
 	t.Parallel()
-	assert.True(t, SupportedProvider("google-native"))
-	assert.False(t, SupportedProvider("kubernetes"))
-	assert.False(t, SupportedProvider(""))
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{"aws", true},
+		{"AWS", true},
+		{"aws-native", true},
+		{"azure-native", true},
+		{"azurerm", true},
+		{"google", true},
+		{"google-native", true},
+		{"gcp", true},
+		{"kubernetes", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.want, SupportedProvider(tt.name))
+		})
+	}
 }

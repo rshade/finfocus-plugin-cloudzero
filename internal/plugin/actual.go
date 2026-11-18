@@ -61,6 +61,11 @@ func window(start, end *timestamppb.Timestamp) (time.Time, time.Time, error) {
 	return from, to, nil
 }
 
+// cloudProviderDimension is grouped on, not filtered on. CloudZero's filter is
+// case-sensitive and its spellings are undocumented, so each row carries the
+// value and mapping.Filter compares it with the resource's provider.
+const cloudProviderDimension = "CloudProvider"
+
 // costsFor returns every resource's daily rows for the months that cover the
 // window, filtered only by the shared dimensions. Resources that share those
 // dimensions share one upstream call and one cache entry.
@@ -83,7 +88,7 @@ func (p *CloudZeroPlugin) costsFor(
 	rows, err := p.client.GetCosts(ctx, czclient.CostQuery{
 		Start:    from,
 		End:      to,
-		GroupBy:  []string{p.cfg.ResourceDimension},
+		GroupBy:  []string{p.cfg.ResourceDimension, cloudProviderDimension},
 		Filters:  filters,
 		CostType: p.cfg.CostType,
 	})
@@ -138,7 +143,7 @@ func (p *CloudZeroPlugin) rowsFor(
 ) []*pbc.ActualCostResult {
 	out := make([]*pbc.ActualCostResult, 0, len(rows))
 	for _, row := range rows {
-		if !filter.Matches(row.Dimensions[p.cfg.ResourceDimension]) {
+		if !filter.Matches(row.Dimensions[p.cfg.ResourceDimension], row.Dimensions[cloudProviderDimension]) {
 			continue
 		}
 		if !overlaps(row.UsageDate, start, end) {

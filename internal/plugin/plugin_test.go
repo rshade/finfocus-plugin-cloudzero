@@ -117,7 +117,10 @@ func (f *fakeCosts) calls() []czclient.CostQuery {
 }
 
 func costRow(when time.Time, cost float64, resourceID string) czclient.CostRow {
-	return czclient.CostRow{UsageDate: when, Cost: cost, Dimensions: map[string]string{"Resource": resourceID}}
+	return czclient.CostRow{
+		UsageDate: when, Cost: cost,
+		Dimensions: map[string]string{"Resource": resourceID, "CloudProvider": "AWS"},
+	}
 }
 
 func readyConfig() config.Config {

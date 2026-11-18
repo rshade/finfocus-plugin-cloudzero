@@ -18,7 +18,9 @@ unverified.
   does not return an account or tag slice, because that slice would be counted
   once per resource in a stack total. `Resource` is the dimension that worked
   on the live account.
-- `CloudProvider` values for Azure and GCP are assumptions (`Azure`, `GCP`).
+- The plugin does not filter on `CloudProvider`. It groups by it and matches
+  each row's value to the resource's provider ignoring case. That worked for
+  `AWS`. Azure and GCP spellings are unverified, but none is hardcoded.
 - CloudZero attributes some cost to resources that are not in a Pulumi stack.
   Root EBS volumes are their own `volume` CZRNs, and the public IPv4 charge of
   an Elastic IP lands on its network interface, not on the EIP. Those amounts
@@ -100,7 +102,8 @@ GET https://api.cloudzero.com/v2/billing/costs
   &end_date=2023-11-01T00:00:00Z
   &granularity=daily
   &group_by=Resource
-  &filters={"CloudProvider":["AWS"],"Account":["123456789012"],"Region":["us-east-1"]}
+  &group_by=CloudProvider
+  &filters={"Account":["123456789012"],"Region":["us-east-1"]}
   &cost_type=real_cost
 ```
 

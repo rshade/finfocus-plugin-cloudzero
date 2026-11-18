@@ -61,7 +61,9 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
 2. Plugin's `Mapper` normalizes to CloudZero dimensions:
 
    - Require `CLOUDZERO_RESOURCE_DIMENSION`. Decline when it is unset
-   - Filters use dimension IDs: `CloudProvider`, `Account`, `Region`, plus configured tag mappings
+   - Filters use dimension IDs: `Account`, `Region`, plus configured tag mappings
+   - `CloudProvider` is grouped on, not filtered on. Rows match the resource's
+     provider ignoring case. Do not hardcode CloudZero spellings
    - Resource dimension value is a CZRN. An existing `czrn:` id wins. Otherwise an AWS ARN is converted to `czrn:<provider>:<service>:<region>:<account>:<type>:<id>`
 3. Plugin's `CZClient` queries CloudZero REST API v2
 4. Response cached via `Cache`. This plugin computes the TTL. CloudZero does not send one
@@ -214,7 +216,8 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 
 - `Resource` is one row per resource, valued as a CZRN such as
   `czrn:aws:ec2:us-west-2:<account>:nat-gateway:nat-0abc`
-- `CloudProvider` is `AWS`. Bare-key auth works
+- `CloudProvider` is `AWS`, and the filter is case-sensitive (`aws` matches no
+  rows). Bare-key auth works
 - Pulumi state has no ARN for `aws:ec2/natGateway`. The plugin matches bare AWS
   ids (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) by CZRN suffix
 - Root EBS volumes and an Elastic IP's IPv4 charge are separate CZRNs
@@ -314,9 +317,8 @@ tag must be plain `v0.1.0` (`include-component-in-tag` is false).
   the plugin covers every capability.
 - The cost query is month-aligned and sliced locally. One call per resource
   exhausts the 60 request daily budget, so the query filters only on shared
-  dimensions (`CloudProvider`, `Account`, `Region`, tag dimensions), never on
-  the resource. `GetActualCost` and `BatchCost` share one cache entry per month
-  and filter set.
+  dimensions (`Account`, `Region`, tag dimensions), never on the resource.
+  `GetActualCost` and `BatchCost` share one cache entry per month and filter set.
 - Resource identity is resolved once in `mapping.Filter`, in this order:
   descriptor `pulumi:cloudId` tag, `arn`, `id`, then the legacy request `tags`,
   `arn`, `resource_id`. The first one that yields a CZRN wins.

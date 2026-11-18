@@ -13,8 +13,6 @@ const (
 	awsProvider = "aws"
 	s3Service   = "s3"
 	bucketType  = "bucket"
-
-	awsCloudProvider = "AWS"
 )
 
 // awsIDTypes maps the prefix of a bare AWS id to its CZRN resource type. The
