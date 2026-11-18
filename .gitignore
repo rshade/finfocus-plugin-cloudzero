@@ -1,0 +1,40 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Go build cache
+.cache/
+.go/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
+
+# Coverage
+*.coverprofile
+coverage.out
+
+# Build artifacts. Anchor these so cmd/finfocus-plugin-cloudzero/ is tracked.
+/finfocus-plugin-cloudzero
+/bin/
+
+# Vale style packages, fetched by `vale sync`. Keep only the vocabularies.
+.vale/styles/*
+!.vale/styles/config/
+.vale/styles/config/*
+!.vale/styles/config/vocabularies/

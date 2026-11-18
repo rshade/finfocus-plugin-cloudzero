@@ -1,0 +1,75 @@
+{
+  "name": "cloudzero",
+  "version": "0.1.0",
+  "type": "costsource",
+  "description": "CloudZero actual-cost plugin for FinFocus. Costs come from GET /v2/billing/costs. The v0.1.0 build is tested against documented responses, not a live CloudZero account.",
+  "executable": "finfocus-plugin-cloudzero",
+  "protocol": "grpc",
+  "supported_resources": [
+    "aws",
+    "azure",
+    "gcp"
+  ],
+  "configuration": {
+    "apiKey": {
+      "type": "string",
+      "description": "CloudZero API key. Sent as the Authorization header with no Bearer prefix. Required for cost RPCs.",
+      "required": false,
+      "env": "CLOUDZERO_API_KEY"
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "CloudZero API origin, including the /v2 prefix.",
+      "required": false,
+      "default": "https://api.cloudzero.com/v2",
+      "env": "CLOUDZERO_BASE_URL"
+    },
+    "costType": {
+      "type": "string",
+      "description": "CloudZero cost_type. Default real_cost drops tax, support, and unused commitments.",
+      "required": false,
+      "default": "real_cost",
+      "env": "CLOUDZERO_COST_TYPE"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Currency label recorded on each result. The API does not return a currency.",
+      "required": false,
+      "default": "USD",
+      "env": "CLOUDZERO_CURRENCY"
+    },
+    "resourceDimension": {
+      "type": "string",
+      "description": "CloudZero dimension ID that identifies one resource. Cost RPCs decline when this is empty.",
+      "required": false,
+      "env": "CLOUDZERO_RESOURCE_DIMENSION"
+    },
+    "tagDimensions": {
+      "type": "string",
+      "description": "Comma-separated tagKey=dimensionID pairs. Dimension IDs are not derived from tag names.",
+      "required": false,
+      "env": "CLOUDZERO_TAG_DIMENSIONS"
+    },
+    "dailyBudget": {
+      "type": "string",
+      "description": "Maximum cost and dimension requests this process will make. Default 50.",
+      "required": false,
+      "default": "50",
+      "env": "CLOUDZERO_DAILY_BUDGET"
+    },
+    "cacheTtl": {
+      "type": "string",
+      "description": "How long a closed month of costs stays cached.",
+      "required": false,
+      "default": "6h",
+      "env": "CLOUDZERO_CACHE_TTL"
+    },
+    "recentTtl": {
+      "type": "string",
+      "description": "How long a cost row from the newest two days stays cached.",
+      "required": false,
+      "default": "1h",
+      "env": "CLOUDZERO_RECENT_TTL"
+    }
+  }
+}

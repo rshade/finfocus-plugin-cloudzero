@@ -1,0 +1,80 @@
+[tools]
+
+# ---------------------------------------------------------------- build & test
+
+# Keep in sync with the `go` directive in go.mod.
+# Pins match finfocus-plugin-opencost, the newest sibling toolchain.
+go = "1.27.4"
+
+golangci-lint = "2.15.0"
+
+# Vulnerability scanner for Go dependencies.
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.9.0"
+
+# Release binary building.
+goreleaser = "2.20.2"
+
+# ------------------------------------------------------------------ docs & lint
+
+# Node provides the npm backend for markdownlint and commitlint.
+node = "26"
+
+# Markdown linting CLI.
+"npm:markdownlint-cli2" = "0.24.1"
+
+# Lints GitHub workflow YAML files.
+actionlint = "1.7.12"
+
+# Prose linting for documentation.
+vale = "3.27.0"
+
+# Commit message linting.
+"npm:@commitlint/cli" = "21.2.4"
+"npm:@commitlint/config-conventional" = "21.2.4"
+
+# GitHub Actions review comments (via the aqua registry).
+"aqua:reviewdog/reviewdog" = "0.21.3"
+
+[tasks.test]
+description = "Run all tests"
+run = "make test"
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "make lint"
+
+[tasks.lint-md]
+description = "Lint markdown files"
+run = "make lint-md"
+
+[tasks.lint-prose]
+description = "Lint prose with Vale"
+run = "make lint-prose"
+
+[tasks.vuln]
+description = "Check for known vulnerabilities"
+run = "make vuln"
+
+[tasks.fmt]
+description = "Format Go code"
+run = "make fmt"
+
+[tasks.build]
+description = "Build the plugin binary"
+run = "make build"
+
+[tasks.test-race]
+description = "Run tests with the race detector"
+run = "make test-race"
+
+[tasks.test-integration]
+description = "Live CloudZero calls. Skips unless CLOUDZERO_API_KEY is set"
+run = "make test-integration"
+
+[tasks.release-check]
+description = "Check the GoReleaser configuration"
+run = "make release-check"
+
+[tasks.validate]
+description = "Format, vet, test, lint, and scan for vulnerabilities"
+run = "make validate"

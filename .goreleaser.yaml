@@ -1,0 +1,40 @@
+version: 2
+
+project_name: finfocus-plugin-cloudzero
+
+builds:
+  - id: cloudzero
+    main: ./cmd/finfocus-plugin-cloudzero
+    binary: finfocus-plugin-cloudzero
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ title .Os }}_{{ if eq .Arch \"amd64\" }}x86_64{{ else }}{{ .Arch }}{{ end }}"
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - CLAUDE.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+release:
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+  mode: replace
+  prerelease: auto
