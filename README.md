@@ -27,9 +27,6 @@ unverified.
   are not reported for the instance or the EIP.
 - The costs response has no currency. Results are labelled with
   `CLOUDZERO_CURRENCY`, which defaults to `USD`.
-- `--adapter` cannot select this plugin yet. Registry discovery matches the
-  install name `cloudzero`, and core then matches the plugin's reported name,
-  `finfocus-plugin-cloudzero`. Omit `--adapter`. See #17.
 - A bad key is documented as 403. The client treats 401 the same way.
 - There is no `Retry-After` or `X-RateLimit-*` header in the docs.
 
@@ -45,7 +42,9 @@ Live checks belong to the owner. `make test-integration` skips unless
 | GetProjectedCost, GetPricingSpec, EstimateCost | `Unimplemented` |
 | Supports | Actual cost for AWS, Azure, and GCP when a key and a resource dimension are set |
 
-`GetPluginInfo` advertises `ACTUAL_COSTS` and `BATCH_COST` only.
+`GetPluginInfo` advertises `ACTUAL_COSTS` and `BATCH_COST` only. The plugin
+reports the name `cloudzero`, its registry name, so `--adapter cloudzero`
+selects it.
 
 An empty result means CloudZero returned no rows. The plugin does not invent
 a `$0` cost. Each row's `source` names CloudZero, the cost type, and the

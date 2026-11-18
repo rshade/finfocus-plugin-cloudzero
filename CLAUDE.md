@@ -26,7 +26,8 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
 
 ### Required Methods
 
-- **Name()**: Returns "finfocus-plugin-cloudzero"
+- **Name()**: Returns `cloudzero`, the registry name. Core matches `--adapter`
+  against both the registry install name and `Name()`, so they must agree
 - **Supports(ResourceDescriptor)**: Checks if resource is supported
 - **GetPluginInfo()**: Returns plugin metadata (name, version, spec_version, providers)
 
@@ -242,10 +243,9 @@ own arguments, so put shell checks in a script file.
 To check against a real stack, export a past state with resources
 (`pulumi stack export --version N`) and run `finfocus cost actual
 --pulumi-state <file>` with only this plugin installed in a throwaway
-`FINFOCUS_HOME`. Do not pass `--adapter`: no value selects this plugin (#8).
-Registry discovery matches the install name `cloudzero`, and the engine matches
-`Name()`, `finfocus-plugin-cloudzero`. #17 renames `Name()` to `cloudzero`, and
-`rshade/finfocus#2206` lets core match either name.
+`FINFOCUS_HOME`. Pass `--adapter cloudzero` to select it. Registry discovery
+matches the install name and the engine matches `Name()`, so both are
+`cloudzero` (#8, #17). `rshade/finfocus#2206` lets core match either name.
 
 ## Dependencies
 
