@@ -18,12 +18,12 @@ decision recorded in the docs.
 
 ## Immediate Focus
 
-**Goal:** close the live-check questions that only need a couple of CloudZero
-calls.
+**Goal:** make `--adapter cloudzero` select the plugin. Core needs a matching
+fix, `rshade/finfocus#2206`, for plugins whose `Name()` differs from their
+registry name.
 
-- [ ] #7 Spike: settle `end_date` inclusivity and CloudZero data freshness
-  *(2-hour timebox)*
-- [ ] #8 Spike: does `--adapter cloudzero` select the plugin? *(2-hour timebox)*
+- [ ] #17 Return `cloudzero` from `Name()` so `--adapter cloudzero` selects the
+  plugin [S]
 
 Release PR 3 (0.1.1) is open and held by the owner.
 
@@ -63,6 +63,8 @@ decision, not a bug fix.
 
 ### 2026-Q4
 
+- [x] #7 `spike`: `end_date` is exclusive; data is near real time. Closed 2026-11-18.
+- [x] #8 `spike`: no `--adapter` value selects the plugin. Closed 2026-11-18.
 - [x] `release`: v0.1.0 published with six archives and checksums. Closed 2026-11-18. [M]
 - [x] `registry`: added to the FinFocus registry (`rshade/finfocus` PR 2200). Closed 2026-11-18. [S]
 - [x] `mapping`: AWS resources without an ARN match by CZRN suffix. Closed 2026-11-18. [M]

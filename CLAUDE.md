@@ -224,12 +224,13 @@ func TestFilterCloudIdentifiers(t *testing.T) {
   (`volume`, `network-interface`), so they are not in any stack resource
 - A bad key returns HTTP 403 with `{"message": ...}`
 - The limit is a rolling 24 hours. The 429 body says "Please wait N minute(s)"
+- `end_date` is exclusive. The current UTC day appears as a partial row
+  (checked 2026-11-18, #7)
 
 ### Unverified
 
 - Azure and GCP `CloudProvider` values (the owner's organization has AWS only)
-- Whether `end_date` is inclusive
-- Currency of `cost`, and how fresh the newest day is
+- Currency of `cost`, and when a day's cost becomes final
 - Whether the 60 request limit is per key or per organization. It is shared
   with other callers: a 429 arrived after about 14 calls of this project's
   own
@@ -241,8 +242,10 @@ own arguments, so put shell checks in a script file.
 To check against a real stack, export a past state with resources
 (`pulumi stack export --version N`) and run `finfocus cost actual
 --pulumi-state <file>` with only this plugin installed in a throwaway
-`FINFOCUS_HOME`. Do not pass `--adapter cloudzero`: core matches `--adapter`
-against `Name()`, which is `finfocus-plugin-cloudzero`.
+`FINFOCUS_HOME`. Do not pass `--adapter`: no value selects this plugin (#8).
+Registry discovery matches the install name `cloudzero`, and the engine matches
+`Name()`, `finfocus-plugin-cloudzero`. #17 renames `Name()` to `cloudzero`, and
+`rshade/finfocus#2206` lets core match either name.
 
 ## Dependencies
 
