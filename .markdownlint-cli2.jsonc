@@ -1,0 +1,5 @@
+// markdownlint-cli2 does not read .markdownlintignore. release-please writes
+// CHANGELOG.md, so it is excluded here. Rules stay in .markdownlint.json.
+{
+  "ignores": ["CHANGELOG.md"]
+}
