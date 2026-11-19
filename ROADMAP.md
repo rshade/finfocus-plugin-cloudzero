@@ -18,14 +18,9 @@ decision recorded in the docs.
 
 ## Immediate Focus
 
-**Goal:** make `--adapter cloudzero` select the plugin. Core needs a matching
-fix, `rshade/finfocus#2206`, for plugins whose `Name()` differs from their
-registry name.
-
-- [ ] #17 Return `cloudzero` from `Name()` so `--adapter cloudzero` selects the
-  plugin [S]
-
-Release PR 3 (0.1.1) is open and held by the owner.
+No active items. v0.1.1 shipped on 2026-11-19 with the shared cost query, the
+`cloudzero` plugin name, the rate-limit wait, and the root volume cost. #9 is
+the next item.
 
 ## Near-Term Vision
 
@@ -33,9 +28,10 @@ Release PR 3 (0.1.1) is open and held by the owner.
 bills to parts of a stack resource.
 
 - [ ] #9 Accept the CloudZero key per request and advertise plugin settings [L]
-- [ ] #10 Include the root EBS volume cost in an instance's actual cost [M]
-- [ ] #11 Report the CloudZero rate-limit wait time in the `ResourceExhausted`
-  message [S]
+
+The root volume cost (#10) reaches an instance only when core sends
+`rootBlockDevice.volumeId`. A program that sets the root disk loses it to
+core's shallow property merge until `rshade/finfocus#2258` lands.
 
 ## Future Vision (Long-Term)
 
@@ -63,6 +59,11 @@ decision, not a bug fix.
 
 ### 2026-Q4
 
+- [x] `release`: v0.1.1 published with seven assets. Closed 2026-11-19. [S]
+- [x] #10 `mapping`: root EBS volume cost added to its instance. Closed 2026-11-19. [M]
+- [x] #11 `czclient`: rate-limit message names CloudZero's stated wait. Closed 2026-11-19. [S]
+- [x] #19 `plugin`: concurrent queries shared; cooldown after a 429. Closed 2026-11-19. [M]
+- [x] #17 `plugin`: `Name()` returns `cloudzero` for `--adapter`. Closed 2026-11-18. [S]
 - [x] #7 `spike`: `end_date` is exclusive; data is near real time. Closed 2026-11-18.
 - [x] #8 `spike`: no `--adapter` value selects the plugin. Closed 2026-11-18.
 - [x] `release`: v0.1.0 published with six archives and checksums. Closed 2026-11-18. [M]
