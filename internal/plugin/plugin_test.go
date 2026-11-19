@@ -96,18 +96,28 @@ func TestUnimplementedCostRPCs(t *testing.T) {
 }
 
 // fakeCosts records every query and answers with fixed rows or a fixed error.
+// A non-nil gate holds each call open until the test closes it.
 type fakeCosts struct {
 	mu      sync.Mutex
 	rows    []czclient.CostRow
 	err     error
 	queries []czclient.CostQuery
+	gate    chan struct{}
 }
 
-func (f *fakeCosts) GetCosts(_ context.Context, q czclient.CostQuery) ([]czclient.CostRow, error) {
+func (f *fakeCosts) GetCosts(ctx context.Context, q czclient.CostQuery) ([]czclient.CostRow, error) {
 	f.mu.Lock()
-	defer f.mu.Unlock()
 	f.queries = append(f.queries, q)
-	return f.rows, f.err
+	rows, err, gate := f.rows, f.err, f.gate
+	f.mu.Unlock()
+	if gate != nil {
+		select {
+		case <-gate:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	return rows, err
 }
 
 func (f *fakeCosts) calls() []czclient.CostQuery {

@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"errors"
 
 	"google.golang.org/grpc/codes"
@@ -22,6 +23,9 @@ var failureCodes = map[czclient.Kind]codes.Code{
 }
 
 func statusFrom(err error) error {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return status.FromContextError(err).Err()
+	}
 	if api, isAPI := errors.AsType[*czclient.APIError](err); isAPI {
 		if code, ok := failureCodes[api.Kind]; ok {
 			return status.Error(code, api.Error())

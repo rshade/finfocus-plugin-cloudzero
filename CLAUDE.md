@@ -323,6 +323,13 @@ and get no issue. Spikes carry `spike` and a `timebox/*` label instead of
 - Return `codes.ResourceExhausted`. The limit is a rolling 24 hours, not a
   calendar day: the live 429 body says "Please wait N minute(s)", and other
   callers on the same key or organization count toward it
+- After a 429 the client fails every request that spends budget with the
+  rate-limit error for 5 minutes, without sending it (`rateLimitCooldown`).
+  Cursor pages are still sent. Tests replace the clock through `Client.now`
+- Concurrent requests with the same cache key share one in-flight call
+  (`inflight` in `internal/plugin`). The call ignores its first caller's
+  cancellation but keeps its deadline (`detached`). A caller already canceled
+  starts no call. Errors reach every waiter and are not cached
 
 ### Cache Invalidation
 

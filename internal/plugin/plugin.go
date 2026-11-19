@@ -38,6 +38,7 @@ type CloudZeroPlugin struct {
 	logger  zerolog.Logger
 	mapper  *mapping.Mapper
 	cache   *cache.Cache
+	fetches *inflight
 	now     func() time.Time
 }
 
@@ -52,6 +53,7 @@ func New(version string, cfg config.Config, client CostSource, logger zerolog.Lo
 		logger:                               logger,
 		mapper:                               mapping.NewMapper(logger, cfg.TagDimensions, cfg.ResourceDimension),
 		cache:                                cache.NewCache(),
+		fetches:                              newInflight(),
 		now:                                  time.Now,
 	}
 }

@@ -129,6 +129,87 @@ func TestGetCostsMapsStatuses(t *testing.T) {
 	}
 }
 
+func TestRateLimitCooldownSkipsRequests(t *testing.T) {
+	t.Parallel()
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if hits.Add(1) == 1 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			writeRaw(t, w, `{"error":{"message":"slow","type":"Rate"}}`)
+			return
+		}
+		writeJSON(t, w, emptyCosts())
+	}))
+	t.Cleanup(srv.Close)
+	client := testClient(t, srv.URL, "key", 10)
+	limitedAt := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+	now := limitedAt
+	client.now = func() time.Time { return now }
+	query := CostQuery{Start: limitedAt, CostType: "real_cost"}
+
+	_, err := client.GetCosts(context.Background(), query)
+	var api *APIError
+	require.ErrorAs(t, err, &api)
+	assert.Equal(t, KindRateLimit, api.Kind)
+	assert.Equal(t, 1, client.RequestsUsed())
+
+	for _, at := range []time.Duration{0, time.Minute, rateLimitCooldown - time.Second} {
+		now = limitedAt.Add(at)
+		_, err = client.GetCosts(context.Background(), query)
+		require.ErrorAs(t, err, &api, "after %s", at)
+		assert.Equal(t, KindRateLimit, api.Kind)
+		_, err = client.GetDimensions(context.Background())
+		require.ErrorAs(t, err, &api, "after %s", at)
+		assert.Equal(t, KindRateLimit, api.Kind)
+	}
+	assert.Equal(t, int32(1), hits.Load())
+	assert.Equal(t, 1, client.RequestsUsed())
+
+	now = limitedAt.Add(rateLimitCooldown + time.Second)
+	rows, err := client.GetCosts(context.Background(), query)
+	require.NoError(t, err)
+	assert.Empty(t, rows)
+	assert.Equal(t, int32(2), hits.Load())
+	assert.Equal(t, 2, client.RequestsUsed())
+}
+
+func TestRateLimitCooldownStillSendsCursorPages(t *testing.T) {
+	t.Parallel()
+	var (
+		hits   atomic.Int32
+		client *Client
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		if r.URL.Query().Get("cursor") == "" {
+			client.coolDown()
+			writeJSON(t, w, map[string]any{
+				"costs":      []map[string]any{{"usage_date": "2026-11-01T00:00:00Z", "cost": 1}},
+				"pagination": map[string]any{"cursor": map[string]any{"next_cursor": "page-2", "has_next": true}},
+			})
+			return
+		}
+		writeJSON(t, w, map[string]any{
+			"costs":      []map[string]any{{"usage_date": "2026-11-02T00:00:00Z", "cost": 2}},
+			"pagination": map[string]any{"cursor": map[string]any{"next_cursor": nil, "has_next": false}},
+		})
+	}))
+	t.Cleanup(srv.Close)
+	client = testClient(t, srv.URL, "key", 10)
+
+	rows, err := client.GetCosts(context.Background(), CostQuery{CostType: "real_cost"})
+	require.NoError(t, err, "a cursor page is sent during another query's cooldown")
+	assert.Len(t, rows, 2)
+	assert.Equal(t, int32(2), hits.Load())
+	assert.Equal(t, 1, client.RequestsUsed())
+
+	_, err = client.GetCosts(context.Background(), CostQuery{CostType: "real_cost"})
+	var api *APIError
+	require.ErrorAs(t, err, &api)
+	assert.Equal(t, KindRateLimit, api.Kind, "a new first page is not sent during the cooldown")
+	assert.Equal(t, int32(2), hits.Load())
+}
+
 func TestGetCostsRetriesServerError(t *testing.T) {
 	t.Parallel()
 	var hits atomic.Int32
