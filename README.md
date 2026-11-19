@@ -21,10 +21,13 @@ unverified.
 - The plugin does not filter on `CloudProvider`. It groups by it and matches
   each row's value to the resource's provider ignoring case. That worked for
   `AWS`. Azure and GCP spellings are unverified, but none is hardcoded.
-- CloudZero attributes some cost to resources that are not in a Pulumi stack.
-  Root EBS volumes are their own `volume` CZRNs, and the public IPv4 charge of
-  an Elastic IP lands on its network interface, not on the EIP. Those amounts
-  are not reported for the instance or the EIP.
+- CloudZero bills an instance's root EBS volume as its own `volume` CZRN. When
+  the instance's attributes name it (`rootBlockDevice.volumeId`, as Pulumi
+  state does), the volume's cost is added to the instance as a separate
+  `cloudzero:<cost type> <currency> root volume` line, from the same query.
+  Data volumes are not added.
+- The public IPv4 charge of an Elastic IP lands on its network interface, not
+  on the EIP, and is not reported for the EIP.
 - The costs response has no currency. Results are labelled with
   `CLOUDZERO_CURRENCY`, which defaults to `USD`.
 - A bad key is documented as 403. The client treats 401 the same way.

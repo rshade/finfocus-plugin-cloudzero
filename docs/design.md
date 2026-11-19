@@ -245,7 +245,9 @@ on a live account. See the README "v0.1.0 limitations" section.
 - The 60 request limit is a rolling 24 hours, shared with other callers of the
   key or organization. The 429 body says how many minutes to wait
 - Root EBS volumes and the IPv4 charge of an Elastic IP are separate CZRNs
-  (`volume` and `network-interface`). They are not part of the instance or the EIP
+  (`volume` and `network-interface`). An instance whose attributes name its
+  root volume (`rootBlockDevice.volumeId`) gets the volume's rows as a separate
+  `... root volume` source (#10). The EIP's IPv4 charge is not attributed
 - `end_date` is exclusive (2026-11-18): a query ending at `2026-11-12T00:00:00Z`
   returns days up to 2026-11-11
 - Data is near real time (2026-11-18): the current UTC day appears as a partial

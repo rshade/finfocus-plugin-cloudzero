@@ -222,7 +222,14 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 - Pulumi state has no ARN for `aws:ec2/natGateway`. The plugin matches bare AWS
   ids (`i-`, `vol-`, `eni-`, `nat-`, `eipalloc-`) by CZRN suffix
 - Root EBS volumes and an Elastic IP's IPv4 charge are separate CZRNs
-  (`volume`, `network-interface`), so they are not in any stack resource
+  (`volume`, `network-interface`). A root volume named in the instance's
+  `attributes.rootBlockDevice.volumeId` is matched by `Filter.RootVolumeSuffix`
+  and returned as separate results whose source ends in "root volume". Core
+  sums every result into the total and keys its breakdown by source, so the
+  instance's total includes the volume. Data volumes are not added. Core's
+  shallow `ingest.MergeProperties` lets an input `rootBlockDevice` (a program
+  that sets the disk size) replace the output block, so `volumeId` is lost
+  until core deep-merges
 - A bad key returns HTTP 403 with `{"message": ...}`
 - The limit is a rolling 24 hours. The 429 body says "Please wait N minute(s)"
 - `end_date` is exclusive. The current UTC day appears as a partial row
