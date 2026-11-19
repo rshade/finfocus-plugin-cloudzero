@@ -7,6 +7,7 @@ import (
 	pbc "github.com/rshade/finfocus-spec/sdk/go/proto/finfocus/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestFilterCloudIdentifiers(t *testing.T) {
@@ -355,4 +356,67 @@ func TestSupportedProvider(t *testing.T) {
 			assert.Equal(t, tt.want, SupportedProvider(tt.name))
 		})
 	}
+}
+
+func TestFilterRootVolume(t *testing.T) {
+	t.Parallel()
+	mapper := NewMapper(zerolog.Nop(), nil, "Resource")
+	const (
+		instanceARN = "arn:aws:ec2:us-east-1:123456789012:instance/i-1"
+		rootCZRN    = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-1"
+		dataCZRN    = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-2"
+	)
+	attrs := func(t *testing.T, fields map[string]any) *structpb.Struct {
+		t.Helper()
+		s, err := structpb.NewStruct(fields)
+		require.NoError(t, err)
+		return s
+	}
+	tests := []struct {
+		name     string
+		provider string
+		fields   map[string]any
+		want     string
+	}{
+		{
+			"root block device object",
+			"aws",
+			map[string]any{"rootBlockDevice": map[string]any{"volumeId": "vol-1"}},
+			":volume:vol-1",
+		},
+		{
+			"root block device list",
+			"aws",
+			map[string]any{"rootBlockDevice": []any{map[string]any{"volumeId": "vol-1"}}},
+			":volume:vol-1",
+		},
+		{"data volume only", "aws", map[string]any{"ebsBlockDevices": []any{map[string]any{"volumeId": "vol-2"}}}, ""},
+		{"no attributes", "aws", nil, ""},
+		{"not a volume id", "aws", map[string]any{"rootBlockDevice": map[string]any{"volumeId": "snap-1"}}, ""},
+		{"empty list", "aws", map[string]any{"rootBlockDevice": []any{}}, ""},
+		{"not aws", "azure", map[string]any{"rootBlockDevice": map[string]any{"volumeId": "vol-1"}}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			resource := &pbc.ResourceDescriptor{Provider: tt.provider, Region: "us-east-1", Arn: instanceARN}
+			if tt.fields != nil {
+				resource.Attributes = attrs(t, tt.fields)
+			}
+			filter, err := mapper.Filter(resource, nil, "", "")
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, filter.RootVolumeSuffix)
+			assert.Equal(t, tt.want != "", filter.MatchesRootVolume(rootCZRN, "AWS"))
+			assert.False(t, filter.MatchesRootVolume(dataCZRN, "AWS"), "another volume is never the root volume")
+			assert.False(t, filter.Matches(rootCZRN, "AWS"), "the root volume is not the instance itself")
+		})
+	}
+
+	withRoot := &pbc.ResourceDescriptor{
+		Provider: "aws", Region: "us-east-1", Arn: instanceARN,
+		Attributes: attrs(t, map[string]any{"rootBlockDevice": map[string]any{"volumeId": "vol-1"}}),
+	}
+	filter, err := mapper.Filter(withRoot, nil, "", "")
+	require.NoError(t, err)
+	assert.False(t, filter.MatchesRootVolume(rootCZRN, "Azure"), "CloudProvider must match")
 }

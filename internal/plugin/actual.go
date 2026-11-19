@@ -165,14 +165,28 @@ func (p *CloudZeroPlugin) ttlFor(day time.Time) time.Duration {
 	return p.cfg.CacheTTL
 }
 
+// rootVolumeSource is appended to the source of root volume rows, so core's
+// breakdown, which is keyed by source, shows the volume on its own line.
+const rootVolumeSource = " root volume"
+
+// rowsFor slices the resource's rows out of a month query, one result per day.
+// Rows for its root volume come back as separate results with their own
+// source; core adds them into the resource's total.
 func (p *CloudZeroPlugin) rowsFor(
 	rows []czclient.CostRow,
 	filter mapping.Filter,
 	start, end time.Time,
 ) []*pbc.ActualCostResult {
+	source := "cloudzero:" + p.cfg.CostType + " " + p.cfg.Currency
 	out := make([]*pbc.ActualCostResult, 0, len(rows))
 	for _, row := range rows {
-		if !filter.Matches(row.Dimensions[p.cfg.ResourceDimension], row.Dimensions[cloudProviderDimension]) {
+		resource, provider := row.Dimensions[p.cfg.ResourceDimension], row.Dimensions[cloudProviderDimension]
+		rowSource := source
+		switch {
+		case filter.Matches(resource, provider):
+		case filter.MatchesRootVolume(resource, provider):
+			rowSource += rootVolumeSource
+		default:
 			continue
 		}
 		if !overlaps(row.UsageDate, start, end) {
@@ -181,11 +195,11 @@ func (p *CloudZeroPlugin) rowsFor(
 		out = append(out, &pbc.ActualCostResult{
 			Timestamp: timestamppb.New(row.UsageDate),
 			Cost:      row.Cost,
-			Source:    "cloudzero:" + p.cfg.CostType + " " + p.cfg.Currency,
+			Source:    rowSource,
 			ExpiresAt: timestamppb.New(p.now().Add(p.ttlFor(row.UsageDate))),
 		})
 	}
-	sort.Slice(out, func(i, j int) bool {
+	sort.SliceStable(out, func(i, j int) bool {
 		return out[i].GetTimestamp().AsTime().Before(out[j].GetTimestamp().AsTime())
 	})
 	return out

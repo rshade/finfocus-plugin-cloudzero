@@ -27,6 +27,10 @@ type Filter struct {
 	// filtering on it, and rows match on that value ignoring case. Empty means
 	// the request carried no provider.
 	Provider string
+	// RootVolumeSuffix is ":volume:<vol-id>" for an AWS instance whose
+	// attributes name its root volume, which CloudZero bills as its own
+	// resource. Empty when there is none.
+	RootVolumeSuffix string
 }
 
 // Matches reports whether a CloudZero row belongs to this resource, given the
@@ -39,6 +43,19 @@ func (f Filter) Matches(resource, cloudProvider string) bool {
 		return resource == f.ResourceID
 	}
 	return f.ResourceSuffix != "" && strings.HasSuffix(resource, f.ResourceSuffix)
+}
+
+// MatchesRootVolume reports whether a CloudZero row is this resource's root
+// volume. The rows come from the resource's own account and region, so the
+// volume id suffix is enough.
+func (f Filter) MatchesRootVolume(resource, cloudProvider string) bool {
+	if f.RootVolumeSuffix == "" {
+		return false
+	}
+	if f.Provider != "" && !strings.EqualFold(cloudProvider, f.Provider) {
+		return false
+	}
+	return strings.HasSuffix(resource, f.RootVolumeSuffix)
 }
 
 // Mapper builds CloudZero filters from a resource descriptor.
@@ -73,7 +90,12 @@ func (m *Mapper) Filter(
 	ids := identifiersOf(resource, tags, arn, resourceID)
 	region := ids.region(resource)
 	provider, _ := providerKey(resource.GetProvider())
-	filter := Filter{Shared: map[string]string{}, ResourceID: "", ResourceSuffix: "", Provider: provider}
+	filter := Filter{
+		Shared: map[string]string{}, ResourceID: "", ResourceSuffix: "", Provider: provider, RootVolumeSuffix: "",
+	}
+	if provider == awsProvider {
+		filter.RootVolumeSuffix = rootVolumeSuffix(resource)
+	}
 	if id, ok := ids.czrn(region); ok {
 		filter.ResourceID = id
 	} else if suffix, found := ids.awsSuffix(); found && provider == awsProvider && region != "" {
@@ -92,6 +114,24 @@ func (m *Mapper) Filter(
 	}
 	m.addTagFilters(shared, resource, tags)
 	return filter, nil
+}
+
+// rootVolumeSuffix reads attributes.rootBlockDevice.volumeId, an object or a
+// list whose first entry holds it, as Pulumi state records an instance's root
+// volume. Data volumes in ebsBlockDevices are not read.
+func rootVolumeSuffix(resource *pbc.ResourceDescriptor) string {
+	device := resource.GetAttributes().GetFields()["rootBlockDevice"]
+	if list := device.GetListValue(); list != nil {
+		if len(list.GetValues()) == 0 {
+			return ""
+		}
+		device = list.GetValues()[0]
+	}
+	id := device.GetStructValue().GetFields()["volumeId"].GetStringValue()
+	if !strings.HasPrefix(id, "vol-") || strings.ContainsAny(id, ":/") {
+		return ""
+	}
+	return ":" + awsIDTypes["vol"] + ":" + id
 }
 
 func (m *Mapper) addTagFilters(shared map[string]string, resource *pbc.ResourceDescriptor, tags map[string]string) {

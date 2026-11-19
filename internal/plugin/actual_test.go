@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/rshade/finfocus-plugin-cloudzero/internal/config"
@@ -215,4 +216,38 @@ func TestKeyNeverLogged(t *testing.T) {
 	assert.Equal(t, codes.PermissionDenied, status.Code(err))
 	assert.NotContains(t, err.Error(), key)
 	assert.NotContains(t, buf.String(), key)
+}
+
+func TestGetActualCostIncludesRootVolume(t *testing.T) {
+	t.Parallel()
+	const (
+		rootCZRN  = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-1"
+		otherCZRN = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-2"
+	)
+	costs := &fakeCosts{rows: []czclient.CostRow{
+		costRow(day(2026, 3, 1), 6, firstCZRN),
+		costRow(day(2026, 3, 2), 4, firstCZRN),
+		costRow(day(2026, 3, 1), 0.5, rootCZRN),
+		costRow(day(2026, 3, 2), 0.3, rootCZRN),
+		costRow(day(2026, 3, 1), 9, otherCZRN),
+		costRow(day(2026, 3, 1), 7, secondCZRN),
+	}}
+	plug := fakePlugin(readyConfig(), costs)
+	attrs, err := structpb.NewStruct(map[string]any{"rootBlockDevice": map[string]any{"volumeId": "vol-1"}})
+	require.NoError(t, err)
+	req := actualReq(day(2026, 3, 1), day(2026, 3, 31), firstARN)
+	req.Resource.Attributes = attrs
+
+	resp, err := plug.GetActualCost(context.Background(), req)
+	require.NoError(t, err)
+
+	bySource := map[string]float64{}
+	for _, row := range resp.GetResults() {
+		bySource[row.GetSource()] += row.GetCost()
+	}
+	assert.InDelta(t, 10.0, bySource["cloudzero:real_cost USD"], 1e-9)
+	assert.InDelta(t, 0.8, bySource["cloudzero:real_cost USD root volume"], 1e-9)
+	assert.Len(t, bySource, 2, "another instance's volume is not added")
+	assert.Len(t, resp.GetResults(), 4, "one result per day per source")
+	assert.Len(t, costs.calls(), 1, "the volume comes from the same query")
 }
