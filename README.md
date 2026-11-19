@@ -109,16 +109,21 @@ GET https://api.cloudzero.com/v2/billing/costs
 ```
 
 The documented costs limit is 60 requests a day. Cursor pagination does not
-count. A 429 becomes `ResourceExhausted` with no retry loop. A 410 restarts
-the query once. Transport errors and 5xx are retried briefly, and each retry
-spends one request from `CLOUDZERO_DAILY_BUDGET`. The client timeout is 30
-seconds.
+count. A 429 becomes `ResourceExhausted` with no retry loop. For 5 minutes
+after a 429, the plugin fails every new query with the same error without
+sending it and without spending budget; a query already paging finishes. A 410 restarts the query once.
+Transport errors and 5xx are retried briefly, and each retry spends one
+request from `CLOUDZERO_DAILY_BUDGET`. The client timeout is 30 seconds.
 
 Queries are aligned to the UTC month that covers the request. The resource is
 not a filter: the query is grouped by the resource dimension, and the plugin
 keeps the rows for the requested resource and days. One call, and one cache
 entry, serves every resource with the same provider, account, region, and tag
-dimensions.
+dimensions. This holds for concurrent requests too: when FinFocus asks for
+several such resources at once, the first request sends the call and the
+others wait for its result. A request that gives up waiting does not stop the
+call. A failed call returns its error to every waiting request and is not
+cached.
 
 ## Build
 

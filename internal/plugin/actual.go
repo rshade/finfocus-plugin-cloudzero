@@ -68,7 +68,8 @@ const cloudProviderDimension = "CloudProvider"
 
 // costsFor returns every resource's daily rows for the months that cover the
 // window, filtered only by the shared dimensions. Resources that share those
-// dimensions share one upstream call and one cache entry.
+// dimensions share one upstream call and one cache entry, including requests
+// that arrive while that call is in flight.
 func (p *CloudZeroPlugin) costsFor(
 	ctx context.Context, start, end time.Time, shared map[string]string,
 ) ([]czclient.CostRow, error) {
@@ -76,27 +77,55 @@ func (p *CloudZeroPlugin) costsFor(
 	key := strings.Join([]string{
 		from.Format(time.RFC3339), to.Format(time.RFC3339), p.cfg.CostType, filterKey(shared),
 	}, "|")
-	if cached, ok := p.cache.Get(key); ok {
-		if rows, cast := cached.([]czclient.CostRow); cast {
-			return rows, nil
-		}
+	if rows, ok := p.cached(key); ok {
+		return rows, nil
 	}
 	filters := make(map[string][]string, len(shared))
 	for dimension, value := range shared {
 		filters[dimension] = []string{value}
 	}
-	rows, err := p.client.GetCosts(ctx, czclient.CostQuery{
+	query := czclient.CostQuery{
 		Start:    from,
 		End:      to,
 		GroupBy:  []string{p.cfg.ResourceDimension, cloudProviderDimension},
 		Filters:  filters,
 		CostType: p.cfg.CostType,
-	})
-	if err != nil {
-		return nil, err
 	}
-	p.cache.Set(key, rows, p.ttlFor(to.Add(-time.Nanosecond)))
-	return rows, nil
+	return p.fetches.do(ctx, key, func() ([]czclient.CostRow, error) {
+		// A call for this key may have finished, and filled the cache, after
+		// the check above.
+		if rows, ok := p.cached(key); ok {
+			return rows, nil
+		}
+		fetchCtx, cancel := detached(ctx)
+		defer cancel()
+		rows, err := p.client.GetCosts(fetchCtx, query)
+		if err != nil {
+			return nil, err
+		}
+		p.cache.Set(key, rows, p.ttlFor(to.Add(-time.Nanosecond)))
+		return rows, nil
+	})
+}
+
+// detached keeps ctx's values and deadline but not its cancellation, so a
+// caller that gives up does not stop a fetch that others wait on, and the
+// fetch still ends by the deadline its first caller had.
+func detached(ctx context.Context) (context.Context, context.CancelFunc) {
+	free := context.WithoutCancel(ctx)
+	if deadline, ok := ctx.Deadline(); ok {
+		return context.WithDeadline(free, deadline)
+	}
+	return free, func() {}
+}
+
+func (p *CloudZeroPlugin) cached(key string) ([]czclient.CostRow, bool) {
+	cached, ok := p.cache.Get(key)
+	if !ok {
+		return nil, false
+	}
+	rows, cast := cached.([]czclient.CostRow)
+	return rows, cast
 }
 
 // filterKey serializes dimension filters with sorted keys, so equal filters

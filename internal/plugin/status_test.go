@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,8 @@ func TestStatusFrom(t *testing.T) {
 		{"unavailable", &czclient.APIError{Kind: czclient.KindUnavailable}, codes.Unavailable},
 		{"unknown kind", &czclient.APIError{Kind: czclient.Kind(99)}, codes.Unavailable},
 		{"not an api error", assert.AnError, codes.Unavailable},
+		{"canceled", context.Canceled, codes.Canceled},
+		{"deadline", context.DeadlineExceeded, codes.DeadlineExceeded},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

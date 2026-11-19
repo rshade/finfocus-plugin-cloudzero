@@ -24,6 +24,10 @@ const (
 	maxAttempts    = 3
 	maxBodyBytes   = 8 << 20
 	retryBaseDelay = 20 * time.Millisecond
+	// rateLimitCooldown is how long a 429 stops further requests. CloudZero's
+	// limit is 60 cost requests in a rolling 24 hours, so an immediate retry
+	// would only spend budget on another 429.
+	rateLimitCooldown = 5 * time.Minute
 )
 
 // CostQuery is one daily GET /billing/costs call, before cursor paging.
@@ -58,23 +62,27 @@ type Client struct {
 	userAgent  string
 	budget     int
 	sleep      func(time.Duration)
+	now        func() time.Time
 
-	mu   sync.Mutex
-	used int
+	mu           sync.Mutex
+	used         int
+	limitedUntil time.Time
 }
 
 // New returns a client. An empty API key is stored and rejected at request time.
 func New(cfg config.Config, version string, logger zerolog.Logger) *Client {
 	return &Client{
-		httpClient: &http.Client{Timeout: clientTimeout},
-		logger:     logger,
-		apiKey:     cfg.APIKey,
-		baseURL:    cfg.BaseURL,
-		userAgent:  "finfocus-plugin-cloudzero/" + version,
-		budget:     cfg.DailyBudget,
-		sleep:      time.Sleep,
-		mu:         sync.Mutex{},
-		used:       0,
+		httpClient:   &http.Client{Timeout: clientTimeout},
+		logger:       logger,
+		apiKey:       cfg.APIKey,
+		baseURL:      cfg.BaseURL,
+		userAgent:    "finfocus-plugin-cloudzero/" + version,
+		budget:       cfg.DailyBudget,
+		sleep:        time.Sleep,
+		now:          time.Now,
+		mu:           sync.Mutex{},
+		used:         0,
+		limitedUntil: time.Time{},
 	}
 }
 
@@ -100,6 +108,9 @@ func (c *Client) GetDimensions(ctx context.Context) ([]Dimension, error) {
 // GetCosts calls GET /billing/costs and follows cursors. Cursor pages do not
 // spend budget. Every attempt at a first page spends budget, retries included,
 // because CloudZero may count a failed call. A 410 restarts the query once.
+// After a 429 on any request that spends budget, every such request fails with
+// KindRateLimit for five minutes without being sent or spending budget. Cursor
+// pages are still sent: CloudZero does not count them.
 func (c *Client) GetCosts(ctx context.Context, q CostQuery) ([]CostRow, error) {
 	rows, err := c.pages(ctx, q)
 	var api *APIError
@@ -149,11 +160,14 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, charge 
 	var last error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		if charge {
-			if err := c.spend(); err != nil {
+			if err := c.admit(path); err != nil {
 				return nil, 0, err
 			}
 		}
 		body, code, retry, err := c.once(ctx, path, query)
+		if code == http.StatusTooManyRequests {
+			c.coolDown()
+		}
 		if err == nil && !retry {
 			return body, code, nil
 		}
@@ -170,6 +184,28 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, charge 
 		last = newAPIError(KindUnavailable, 0)
 	}
 	return nil, 0, last
+}
+
+// admit lets a request that spends budget through: it fails during a rate-limit
+// cooldown, and otherwise spends one unit of budget.
+func (c *Client) admit(path string) error {
+	if c.coolingDown() {
+		c.logger.Debug().Str("path", path).Msg("cloudzero rate limit cooldown; request not sent")
+		return newAPIError(KindRateLimit, 0)
+	}
+	return c.spend()
+}
+
+func (c *Client) coolDown() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.limitedUntil = c.now().Add(rateLimitCooldown)
+}
+
+func (c *Client) coolingDown() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.now().Before(c.limitedUntil)
 }
 
 func (c *Client) spend() error {

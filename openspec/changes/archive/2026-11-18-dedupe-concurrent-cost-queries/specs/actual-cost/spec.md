@@ -28,3 +28,21 @@ waiter and SHALL NOT be cached.
 - **THEN** every waiter receives the mapped error and the next request calls CloudZero again
 
 Tested by: TestGetActualCostConcurrentRequestsShareOneCall, TestGetActualCostWaiterHonorsItsContext, TestGetActualCostSharedFailureIsNotCached
+
+### Requirement: A shared CloudZero call is bounded by its first caller
+
+A request whose context has already ended SHALL NOT start a CloudZero request.
+A shared request SHALL ignore its first caller's cancellation but SHALL keep
+that caller's deadline, so it cannot outlive the time the caller allowed.
+
+#### Scenario: The caller has already given up
+
+- **WHEN** a request arrives with a canceled context and no shared call is in flight
+- **THEN** it returns its context error and CloudZero is not called
+
+#### Scenario: The first caller is canceled
+
+- **WHEN** the caller that started a shared call is canceled before its deadline
+- **THEN** the shared call keeps running with that deadline
+
+Tested by: TestGetActualCostCanceledCallerStartsNoFetch, TestDetachedKeepsDeadlineNotCancel
