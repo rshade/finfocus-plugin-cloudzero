@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.1](https://github.com/rshade/finfocus-plugin-cloudzero/compare/v0.1.0...v0.1.1) (2026-11-19)
+
+
+### Features
+
+* include an instance's root EBS volume in its actual cost ([dddb4c7](https://github.com/rshade/finfocus-plugin-cloudzero/commit/dddb4c74d4e43747e0e3857469f55b8ee40feab5)), closes [#10](https://github.com/rshade/finfocus-plugin-cloudzero/issues/10)
+* report CloudZero's rate-limit wait in the ResourceExhausted message ([38a982c](https://github.com/rshade/finfocus-plugin-cloudzero/commit/38a982cbf50bdeddf0b7cc56de0d3981cf74c08b)), closes [#11](https://github.com/rshade/finfocus-plugin-cloudzero/issues/11)
+* report CloudZero's rate-limit wait in the ResourceExhausted message ([#23](https://github.com/rshade/finfocus-plugin-cloudzero/issues/23)) ([3adfebf](https://github.com/rshade/finfocus-plugin-cloudzero/commit/3adfebf3b1d694ff9b2c56796eaa8fbf3c399249))
+
+
+### Bug Fixes
+
+* **deps:** update module google.golang.org/grpc to v1.85.0 ([5140a74](https://github.com/rshade/finfocus-plugin-cloudzero/commit/5140a74efc36db88c7777749b65facaa67788768))
+* **deps:** update module google.golang.org/grpc to v1.85.0 ([95864f8](https://github.com/rshade/finfocus-plugin-cloudzero/commit/95864f8ac71ffb0cac3713bbd7726714838577ed))
+* describe the CloudZero rate limit as a rolling 24 hours ([835122f](https://github.com/rshade/finfocus-plugin-cloudzero/commit/835122fa360ce0a373edbc017626d9ae3bccfa7b))
+* report cloudzero as the plugin name ([8319e3b](https://github.com/rshade/finfocus-plugin-cloudzero/commit/8319e3b466f0b8ba3a6213c87eedcedb3047ae37)), closes [#17](https://github.com/rshade/finfocus-plugin-cloudzero/issues/17)
+* share concurrent CloudZero cost queries and cool down after a 429 ([#20](https://github.com/rshade/finfocus-plugin-cloudzero/issues/20)) ([0980404](https://github.com/rshade/finfocus-plugin-cloudzero/commit/098040435d213b8a1a55b44af0bea03ca3679522)), closes [#19](https://github.com/rshade/finfocus-plugin-cloudzero/issues/19)
+
+
+### Documentation
+
+* add CONTEXT.md and ROADMAP.md and retire TASKS.md ([4f8605c](https://github.com/rshade/finfocus-plugin-cloudzero/commit/4f8605c690f3e804768c98332fbc0d4fbae7ad31))
+* add CONTEXT.md, ROADMAP.md, and baseline OpenSpec specs ([b55c8d0](https://github.com/rshade/finfocus-plugin-cloudzero/commit/b55c8d019daad8681ac853b886147f434c63447c))
+* format the registry PR reference in TASKS.md ([b99f154](https://github.com/rshade/finfocus-plugin-cloudzero/commit/b99f1540a69e5c4b3b4dd912e5940a12b87483b1))
+* link the roadmap items to their issues ([e0b2d4d](https://github.com/rshade/finfocus-plugin-cloudzero/commit/e0b2d4d8e0267955205cb58f6e618e4897fb5254))
+* link the roadmap items to their issues ([f5bec1f](https://github.com/rshade/finfocus-plugin-cloudzero/commit/f5bec1f64ffa0e4ad1847df430285c6c5b1f5578))
+* record the end_date and --adapter spike results ([867eb08](https://github.com/rshade/finfocus-plugin-cloudzero/commit/867eb08f65ac795d1a9b879608e9f003e0cd4517))
+* record the end_date and --adapter spike results ([78eaaaf](https://github.com/rshade/finfocus-plugin-cloudzero/commit/78eaaafca74106c9d88afffeba4045f9ecb2cb88))
+* record the v0.1.0 release and live check in TASKS.md ([faf6560](https://github.com/rshade/finfocus-plugin-cloudzero/commit/faf6560ee85811e29f608bedbeb40ed8e0df0fc7))
+
 ## 0.1.0 (2026-11-18)
 
 
