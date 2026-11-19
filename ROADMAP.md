@@ -18,16 +18,21 @@ decision recorded in the docs.
 
 ## Immediate Focus
 
-No active items. v0.1.1 shipped on 2026-11-19 with the shared cost query, the
-`cloudzero` plugin name, the rate-limit wait, and the root volume cost. #9 is
-the next item.
+**Goal:** let core supply the CloudZero key per request, the v0.2.0 change.
+
+- [ ] #9 Accept the CloudZero key per request and advertise plugin settings [L]
+  *Promoted by /roadmap sync on 2026-11-19 — the only Near-Term item and the
+  v0.2.0 goal*
+
+v0.1.1 shipped on 2026-11-19 and stands as the current release. The owner is
+holding further releases until the plugin has users.
 
 ## Near-Term Vision
 
-**Goal:** let core supply the CloudZero key, and attribute the costs CloudZero
+**Goal:** spend fewer CloudZero requests, and attribute the costs CloudZero
 bills to parts of a stack resource.
 
-- [ ] #9 Accept the CloudZero key per request and advertise plugin settings [L]
+- [ ] #26 Hold the rate-limit cooldown for the wait CloudZero states [S]
 
 The root volume cost (#10) reaches an instance only when core sends
 `rootBlockDevice.volumeId`. A program that sets the root disk loses it to
