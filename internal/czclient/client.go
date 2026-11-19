@@ -67,6 +67,8 @@ type Client struct {
 	mu           sync.Mutex
 	used         int
 	limitedUntil time.Time
+	// waitUntil is when the wait the last 429 stated ends, or zero.
+	waitUntil time.Time
 }
 
 // New returns a client. An empty API key is stored and rejected at request time.
@@ -83,6 +85,7 @@ func New(cfg config.Config, version string, logger zerolog.Logger) *Client {
 		mu:           sync.Mutex{},
 		used:         0,
 		limitedUntil: time.Time{},
+		waitUntil:    time.Time{},
 	}
 }
 
@@ -100,7 +103,7 @@ func (c *Client) GetDimensions(ctx context.Context) ([]Dimension, error) {
 		return nil, err
 	}
 	if code != http.StatusOK {
-		return nil, newAPIError(statusKind(code), code)
+		return nil, responseError(code, body)
 	}
 	return parseDimensions(body)
 }
@@ -134,7 +137,7 @@ func (c *Client) pages(ctx context.Context, q CostQuery) ([]CostRow, error) {
 			return nil, err
 		}
 		if code != http.StatusOK {
-			return nil, newAPIError(statusKind(code), code)
+			return nil, responseError(code, body)
 		}
 		rows, next, hasNext, err := parseCosts(body)
 		if err != nil {
@@ -166,7 +169,7 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, charge 
 		}
 		body, code, retry, err := c.once(ctx, path, query)
 		if code == http.StatusTooManyRequests {
-			c.coolDown()
+			c.coolDown(statedWaitIn(body))
 		}
 		if err == nil && !retry {
 			return body, code, nil
@@ -187,25 +190,44 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, charge 
 }
 
 // admit lets a request that spends budget through: it fails during a rate-limit
-// cooldown, and otherwise spends one unit of budget.
+// cooldown, and otherwise spends one unit of budget. A cooldown error carries
+// what is left of the wait the 429 stated, so a caller that retries at once
+// still learns when to come back.
 func (c *Client) admit(path string) error {
-	if c.coolingDown() {
+	if remaining, cooling := c.coolingDown(); cooling {
 		c.logger.Debug().Str("path", path).Msg("cloudzero rate limit cooldown; request not sent")
-		return newAPIError(KindRateLimit, 0)
+		limited := newAPIError(KindRateLimit, 0)
+		limited.RetryAfter = remaining
+		return limited
 	}
 	return c.spend()
 }
 
-func (c *Client) coolDown() {
+// coolDown starts the cooldown after a 429 and records the wait it stated.
+func (c *Client) coolDown(stated time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.limitedUntil = c.now().Add(rateLimitCooldown)
+	now := c.now()
+	c.limitedUntil = now.Add(rateLimitCooldown)
+	c.waitUntil = time.Time{}
+	if stated > 0 {
+		c.waitUntil = now.Add(stated)
+	}
 }
 
-func (c *Client) coolingDown() bool {
+// coolingDown reports whether a cooldown is running, and what is left of the
+// stated wait, or zero when the 429 stated none.
+func (c *Client) coolingDown() (time.Duration, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.now().Before(c.limitedUntil)
+	now := c.now()
+	if !now.Before(c.limitedUntil) {
+		return 0, false
+	}
+	if c.waitUntil.IsZero() {
+		return 0, true
+	}
+	return max(c.waitUntil.Sub(now), 0), true
 }
 
 func (c *Client) spend() error {

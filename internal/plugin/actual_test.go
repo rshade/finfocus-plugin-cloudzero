@@ -184,6 +184,21 @@ func TestGetActualCostRateLimitAndBudget(t *testing.T) {
 	assert.Contains(t, status.Convert(err).Message(), "budget")
 }
 
+func TestGetActualCostRateLimitNamesWait(t *testing.T) {
+	t.Parallel()
+	limited := func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":{"message":"Please wait 24 minute(s) before trying again.","type":"x"}}`))
+	}
+	now := time.Now()
+	plug := httpPlugin(t, readyConfig(), limited, zerolog.Nop())
+	_, err := plug.GetActualCost(context.Background(), actualReq(now.Add(-time.Hour), now, firstARN))
+	assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+	msg := status.Convert(err).Message()
+	assert.Contains(t, msg, "retry in 24 minutes")
+	assert.NotContains(t, msg, "Please wait")
+}
+
 func TestKeyNeverLogged(t *testing.T) {
 	t.Parallel()
 	const key = "cz-test-key-not-for-logs"

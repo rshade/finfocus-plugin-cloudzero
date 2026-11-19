@@ -323,6 +323,11 @@ and get no issue. Spikes carry `spike` and a `timebox/*` label instead of
 - Return `codes.ResourceExhausted`. The limit is a rolling 24 hours, not a
   calendar day: the live 429 body says "Please wait N minute(s)", and other
   callers on the same key or organization count toward it
+- The message names that wait ("retry in N minutes", `APIError.RetryAfter`).
+  Only the integer is read from the body. Cooldown errors carry what is left
+  of it, because core's quick retries return a cooldown error, not the 429.
+  Do not put it in `ErrorDetail.retry_after_seconds`: core sleeps for that
+  long before retrying
 - After a 429 the client fails every request that spends budget with the
   rate-limit error for 5 minutes, without sending it (`rateLimitCooldown`).
   Cursor pages are still sent. Tests replace the clock through `Client.now`

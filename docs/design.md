@@ -279,7 +279,7 @@ documented as dimension values.
 | Resource dimension unset | FailedPrecondition | "set CLOUDZERO_RESOURCE_DIMENSION" | n/a |
 | Missing cloud id or bad window | InvalidArgument | fixed text with no key, URL, or body | n/a |
 | HTTP 401 or 403 | PermissionDenied | "CloudZero rejected the API key" | n/a |
-| HTTP 429 | ResourceExhausted | "60 cost requests in a rolling 24 hours; retry later" | n/a |
+| HTTP 429 | ResourceExhausted | "60 cost requests in a rolling 24 hours; retry in N minutes", or "retry later" when the body states no wait | n/a |
 | Budget spent | ResourceExhausted | "budget is exhausted; retry tomorrow" | n/a |
 | HTTP 5xx after retries | Unavailable | "CloudZero is unavailable" | n/a |
 | Malformed body | Unavailable | "CloudZero response is not valid JSON" | n/a |
