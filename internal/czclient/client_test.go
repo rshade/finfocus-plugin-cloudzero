@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -161,6 +163,7 @@ func TestRateLimitCooldownSkipsRequests(t *testing.T) {
 		_, err = client.GetDimensions(context.Background())
 		require.ErrorAs(t, err, &api, "after %s", at)
 		assert.Equal(t, KindRateLimit, api.Kind)
+		assert.Zero(t, api.RetryAfter, "a 429 that stated no wait gives none")
 	}
 	assert.Equal(t, int32(1), hits.Load())
 	assert.Equal(t, 1, client.RequestsUsed())
@@ -173,6 +176,44 @@ func TestRateLimitCooldownSkipsRequests(t *testing.T) {
 	assert.Equal(t, 2, client.RequestsUsed())
 }
 
+func TestRateLimitCooldownKeepsStatedWait(t *testing.T) {
+	t.Parallel()
+	captured, err := os.ReadFile(filepath.Join("testdata", "live", "rate_limit_429.json"))
+	require.NoError(t, err)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		writeRaw(t, w, string(captured))
+	}))
+	t.Cleanup(srv.Close)
+	client := testClient(t, srv.URL, "key", 10)
+	limitedAt := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+	now := limitedAt
+	client.now = func() time.Time { return now }
+	query := CostQuery{Start: limitedAt, CostType: "real_cost"}
+
+	_, err = client.GetCosts(context.Background(), query)
+	assert.Contains(t, err.Error(), "retry in 24 minutes")
+
+	tests := []struct {
+		after time.Duration
+		want  string
+	}{
+		{time.Second, "retry in 24 minutes"},
+		{90 * time.Second, "retry in 23 minutes"},
+		{rateLimitCooldown - time.Second, "retry in 20 minutes"},
+	}
+	for _, tt := range tests {
+		now = limitedAt.Add(tt.after)
+		_, err = client.GetCosts(context.Background(), query)
+		var api *APIError
+		require.ErrorAs(t, err, &api)
+		assert.Equal(t, KindRateLimit, api.Kind)
+		assert.Equal(t, 24*time.Minute-tt.after, api.RetryAfter)
+		assert.Contains(t, err.Error(), tt.want, "a retry inside the cooldown still names the wait")
+	}
+	assert.Equal(t, 1, client.RequestsUsed())
+}
+
 func TestRateLimitCooldownStillSendsCursorPages(t *testing.T) {
 	t.Parallel()
 	var (
@@ -182,7 +223,7 @@ func TestRateLimitCooldownStillSendsCursorPages(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		if r.URL.Query().Get("cursor") == "" {
-			client.coolDown()
+			client.coolDown(0)
 			writeJSON(t, w, map[string]any{
 				"costs":      []map[string]any{{"usage_date": "2026-11-01T00:00:00Z", "cost": 1}},
 				"pagination": map[string]any{"cursor": map[string]any{"next_cursor": "page-2", "has_next": true}},

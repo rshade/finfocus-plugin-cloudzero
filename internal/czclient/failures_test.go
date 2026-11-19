@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -24,6 +26,50 @@ func TestAPIErrorText(t *testing.T) {
 	}
 	assert.Equal(t, KindUnavailable, statusKind(http.StatusBadGateway))
 	assert.Equal(t, KindBadRequest, statusKind(http.StatusBadRequest))
+
+	limited := &APIError{Kind: KindRateLimit, Status: http.StatusTooManyRequests}
+	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry later", limited.Error())
+	limited.RetryAfter = 24 * time.Minute
+	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry in 24 minutes", limited.Error())
+	limited.RetryAfter = time.Minute
+	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry in 1 minute", limited.Error())
+	limited.RetryAfter = 23*time.Minute + 30*time.Second
+	assert.Contains(t, limited.Error(), "retry in 24 minutes", "a part minute rounds up")
+	limited.RetryAfter = time.Second
+	assert.Contains(t, limited.Error(), "retry in 1 minute")
+}
+
+func TestRateLimitWait(t *testing.T) {
+	t.Parallel()
+	captured, err := os.ReadFile(filepath.Join("testdata", "live", "rate_limit_429.json"))
+	require.NoError(t, err)
+	tests := []struct {
+		name string
+		body string
+		want time.Duration
+	}{
+		{"captured live body", string(captured), 24 * time.Minute},
+		{"singular", `{"error":{"message":"Please wait 1 minute(s) before trying again."}}`, time.Minute},
+		{"no number", `{"error":{"message":"API Rate Limit has been exceeded."}}`, 0},
+		{"zero", `{"error":{"message":"Please wait 0 minute(s)"}}`, 0},
+		{"hours", `{"error":{"message":"Please wait 2 hour(s)"}}`, 0},
+		{"a full day", `{"error":{"message":"Please wait 1440 minute(s)"}}`, 24 * time.Hour},
+		{"longer than the window", `{"error":{"message":"Please wait 1441 minute(s)"}}`, 0},
+		{"wraps a duration", `{"error":{"message":"Please wait 307445736 minute(s)"}}`, 0},
+		{"overflows an int", `{"error":{"message":"Please wait 99999999999999999999 minute(s)"}}`, 0},
+		{"malformed", `not json`, 0},
+		{"empty", ``, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := responseError(http.StatusTooManyRequests, []byte(tt.body))
+			assert.Equal(t, KindRateLimit, got.Kind)
+			assert.Equal(t, tt.want, got.RetryAfter)
+			assert.Equal(t, tt.want, statedWaitIn([]byte(tt.body)))
+		})
+	}
+	assert.Zero(t, responseError(http.StatusForbidden, captured).RetryAfter, "only a 429 carries a wait")
 }
 
 func TestFloatValue(t *testing.T) {

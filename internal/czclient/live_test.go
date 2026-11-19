@@ -43,6 +43,7 @@ func TestLiveErrorBodies(t *testing.T) {
 			assert.Equal(t, tt.want, api.Kind)
 			assert.NotContains(t, err.Error(), "identity-based policy")
 			assert.NotContains(t, err.Error(), "minute(s)")
+			assert.NotContains(t, err.Error(), "invalid_request_error")
 		})
 	}
 }
