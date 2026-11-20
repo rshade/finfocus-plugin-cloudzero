@@ -24,9 +24,10 @@ const (
 	maxAttempts    = 3
 	maxBodyBytes   = 8 << 20
 	retryBaseDelay = 20 * time.Millisecond
-	// rateLimitCooldown is how long a 429 stops further requests. CloudZero's
-	// limit is 60 cost requests in a rolling 24 hours, so an immediate retry
-	// would only spend budget on another 429.
+	// rateLimitCooldown is the shortest time a 429 stops further requests; a
+	// longer wait stated in the 429 body extends it. CloudZero's limit is 60
+	// cost requests in a rolling 24 hours, so an immediate retry would only
+	// spend budget on another 429.
 	rateLimitCooldown = 5 * time.Minute
 )
 
@@ -67,8 +68,8 @@ type Client struct {
 	mu           sync.Mutex
 	used         int
 	limitedUntil time.Time
-	// waitUntil is when the wait the last 429 stated ends, or zero.
-	waitUntil time.Time
+	// waitStated reports whether the last 429 stated how long to wait.
+	waitStated bool
 }
 
 // New returns a client. An empty API key is stored and rejected at request time.
@@ -85,7 +86,7 @@ func New(cfg config.Config, version string, logger zerolog.Logger) *Client {
 		mu:           sync.Mutex{},
 		used:         0,
 		limitedUntil: time.Time{},
-		waitUntil:    time.Time{},
+		waitStated:   false,
 	}
 }
 
@@ -206,9 +207,9 @@ func (c *Client) get(ctx context.Context, path string, query url.Values, charge 
 }
 
 // admit lets a request that spends budget through: it fails during a rate-limit
-// cooldown, and otherwise spends one unit of budget. A cooldown error carries
-// what is left of the wait the 429 stated, so a caller that retries at once
-// still learns when to come back.
+// cooldown, and otherwise spends one unit of budget. When the 429 stated a
+// wait, a cooldown error carries what is left of the cooldown, so a caller
+// that retries at once still learns when to come back.
 func (c *Client) admit(path string) error {
 	if remaining, cooling := c.coolingDown(); cooling {
 		c.logger.Debug().Str("path", path).Msg("cloudzero rate limit cooldown; request not sent")
@@ -219,31 +220,33 @@ func (c *Client) admit(path string) error {
 	return c.spend()
 }
 
-// coolDown starts the cooldown after a 429 and records the wait it stated.
+// coolDown starts the cooldown after a 429. It lasts for the wait the 429
+// stated, or rateLimitCooldown when that is longer or no wait was stated. A
+// 429 from a request already in flight never ends a running cooldown sooner.
 func (c *Client) coolDown(stated time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	now := c.now()
-	c.limitedUntil = now.Add(rateLimitCooldown)
-	c.waitUntil = time.Time{}
-	if stated > 0 {
-		c.waitUntil = now.Add(stated)
+	until := c.now().Add(max(rateLimitCooldown, stated))
+	if !until.After(c.limitedUntil) {
+		return
 	}
+	c.limitedUntil = until
+	c.waitStated = stated > 0
 }
 
-// coolingDown reports whether a cooldown is running, and what is left of the
-// stated wait, or zero when the 429 stated none.
+// coolingDown reports whether a cooldown is running, and what is left of it,
+// or zero when the 429 stated no wait.
 func (c *Client) coolingDown() (time.Duration, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	now := c.now()
-	if !now.Before(c.limitedUntil) {
+	left := c.limitedUntil.Sub(c.now())
+	if left <= 0 {
 		return 0, false
 	}
-	if c.waitUntil.IsZero() {
+	if !c.waitStated {
 		return 0, true
 	}
-	return max(c.waitUntil.Sub(now), 0), true
+	return left, true
 }
 
 func (c *Client) spend() error {

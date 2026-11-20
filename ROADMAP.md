@@ -32,8 +32,6 @@ holding further releases until the plugin has users.
 **Goal:** spend fewer CloudZero requests, and attribute the costs CloudZero
 bills to parts of a stack resource.
 
-- [ ] #26 Hold the rate-limit cooldown for the wait CloudZero states [S]
-
 The root volume cost (#10) reaches an instance only when core sends
 `rootBlockDevice.volumeId`. A program that sets the root disk loses it to
 core's shallow property merge until `rshade/finfocus#2258` lands.
@@ -64,6 +62,7 @@ decision, not a bug fix.
 
 ### 2026-Q4
 
+- [x] #26 `czclient`: rate-limit cooldown held for CloudZero's stated wait. Closed 2026-11-20. [S]
 - [x] `release`: v0.1.1 published with seven assets. Closed 2026-11-19. [S]
 - [x] #10 `mapping`: root EBS volume cost added to its instance. Closed 2026-11-19. [M]
 - [x] #11 `czclient`: rate-limit message names CloudZero's stated wait. Closed 2026-11-19. [S]

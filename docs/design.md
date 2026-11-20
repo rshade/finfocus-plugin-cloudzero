@@ -218,7 +218,8 @@ on a live account. See the README "v0.1.0 limitations" section.
 
 - **Status**: "60 requests/day" is documented on the costs page. The scope
   (key, organization, calendar day) is not documented
-- **429**: documented. Do not retry in a loop
+- **429**: documented. Do not retry in a loop. The plugin holds budgeted
+  requests for the wait the body states, and for at least 5 minutes
 - **`Retry-After` and `X-RateLimit-*`**: not found in the docs
 - **503**: documented for telemetry writes, not for the costs read
 

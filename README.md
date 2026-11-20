@@ -175,9 +175,10 @@ GET https://api.cloudzero.com/v2/billing/costs
 
 The documented costs limit is 60 requests a day. Cursor pagination does not
 count. A 429 becomes `ResourceExhausted` with no retry loop; its message
-names the wait CloudZero states, such as "retry in 24 minutes". For 5 minutes
-after a 429, the plugin fails every new query with the same error without
-sending it and without spending budget; a query already paging finishes. A 410 restarts the query once.
+names the wait CloudZero states, such as "retry in 24 minutes". For that wait
+after a 429, and for at least 5 minutes, the plugin fails every new query with
+the same error without sending it and without spending budget; a query already
+paging finishes. A 410 restarts the query once.
 Transport errors and 5xx are retried briefly, and each retry spends one
 request from `CLOUDZERO_DAILY_BUDGET`. The client timeout is 30 seconds.
 
