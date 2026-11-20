@@ -382,12 +382,15 @@ and get no issue. Spikes carry `spike` and a `timebox/*` label instead of
   callers on the same key or organization count toward it
 - The message names that wait ("retry in N minutes", `APIError.RetryAfter`).
   Only the integer is read from the body. Cooldown errors carry what is left
-  of it, because core's quick retries return a cooldown error, not the 429.
+  of the cooldown, because core's quick retries return a cooldown error, not
+  the 429.
   Do not put it in `ErrorDetail.retry_after_seconds`: core sleeps for that
   long before retrying
 - After a 429 the client fails every request that spends budget with the
-  rate-limit error for 5 minutes, without sending it (`rateLimitCooldown`).
-  Cursor pages are still sent. Tests replace the clock through `Client.now`
+  rate-limit error and does not send it. The cooldown lasts for the stated
+  wait or 5 minutes (`rateLimitCooldown`), whichever is longer; the wait
+  parser already caps it at one rolling window. Cursor pages are still sent.
+  Tests replace the clock through `Client.now`
 - Concurrent requests with the same cache key share one in-flight call
   (`inflight[T]` in `internal/plugin`, one instance per result type). The
   call ignores its first caller's cancellation but keeps its deadline

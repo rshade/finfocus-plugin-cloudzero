@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -201,6 +202,8 @@ func TestRateLimitCooldownKeepsStatedWait(t *testing.T) {
 		{time.Second, "retry in 24 minutes"},
 		{90 * time.Second, "retry in 23 minutes"},
 		{rateLimitCooldown - time.Second, "retry in 20 minutes"},
+		{rateLimitCooldown + time.Second, "retry in 19 minutes"},
+		{23*time.Minute + 30*time.Second, "retry in 1 minute"},
 	}
 	for _, tt := range tests {
 		now = limitedAt.Add(tt.after)
@@ -212,6 +215,112 @@ func TestRateLimitCooldownKeepsStatedWait(t *testing.T) {
 		assert.Contains(t, err.Error(), tt.want, "a retry inside the cooldown still names the wait")
 	}
 	assert.Equal(t, 1, client.RequestsUsed())
+}
+
+func TestRateLimitCooldownLength(t *testing.T) {
+	t.Parallel()
+	waitBody := func(minutes int) string {
+		const body = `{"error":{"message":"Please wait %d minute(s) before trying again.",` +
+			`"type":"invalid_request_error"}}`
+		return fmt.Sprintf(body, minutes)
+	}
+	tests := []struct {
+		name     string
+		body     string
+		cooldown time.Duration
+		probe    time.Duration
+		want     string
+	}{
+		{"no wait", `{"error":{"message":"slow","type":"Rate"}}`, rateLimitCooldown, 4 * time.Minute, "retry later"},
+		{"zero minutes", waitBody(0), rateLimitCooldown, 4 * time.Minute, "retry later"},
+		{"over one window", waitBody(2000), rateLimitCooldown, 4 * time.Minute, "retry later"},
+		{"shorter than the floor", waitBody(2), rateLimitCooldown, 3 * time.Minute, "retry in 2 minutes"},
+		{"longer than the floor", waitBody(24), 24 * time.Minute, 23*time.Minute + 30*time.Second, "retry in 1 minute"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var hits atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if hits.Add(1) == 1 {
+					w.WriteHeader(http.StatusTooManyRequests)
+					writeRaw(t, w, tt.body)
+					return
+				}
+				writeJSON(t, w, emptyCosts())
+			}))
+			t.Cleanup(srv.Close)
+			client := testClient(t, srv.URL, "key", 10)
+			limitedAt := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+			now := limitedAt
+			client.now = func() time.Time { return now }
+			query := CostQuery{Start: limitedAt, CostType: "real_cost"}
+
+			_, err := client.GetCosts(context.Background(), query)
+			var api *APIError
+			require.ErrorAs(t, err, &api)
+
+			now = limitedAt.Add(tt.probe)
+			_, err = client.GetCosts(context.Background(), query)
+			require.ErrorAs(t, err, &api)
+			assert.Contains(t, err.Error(), tt.want)
+
+			now = limitedAt.Add(tt.cooldown - time.Second)
+			_, err = client.GetCosts(context.Background(), query)
+			require.ErrorAs(t, err, &api)
+			assert.Equal(t, KindRateLimit, api.Kind)
+			assert.Equal(t, int32(1), hits.Load(), "no request is sent before the cooldown ends")
+
+			now = limitedAt.Add(tt.cooldown + time.Second)
+			_, err = client.GetCosts(context.Background(), query)
+			require.NoError(t, err)
+			assert.Equal(t, int32(2), hits.Load())
+			assert.Equal(t, 2, client.RequestsUsed())
+		})
+	}
+}
+
+func TestRateLimitCooldownKeepsLaterEnd(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		second time.Duration
+	}{
+		{"second 429 states no wait", 0},
+		{"second 429 states a shorter wait", 10 * time.Minute},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var hits atomic.Int32
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				hits.Add(1)
+				writeJSON(t, w, emptyCosts())
+			}))
+			t.Cleanup(srv.Close)
+			client := testClient(t, srv.URL, "key", 10)
+			limitedAt := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+			now := limitedAt
+			client.now = func() time.Time { return now }
+			query := CostQuery{Start: limitedAt, CostType: "real_cost"}
+
+			client.coolDown(24 * time.Minute)
+			now = limitedAt.Add(time.Second)
+			client.coolDown(tt.second)
+
+			now = limitedAt.Add(24*time.Minute - time.Second)
+			_, err := client.GetCosts(context.Background(), query)
+			var api *APIError
+			require.ErrorAs(t, err, &api)
+			assert.Equal(t, time.Second, api.RetryAfter, "the first 429's stated wait still names the end")
+			assert.Zero(t, hits.Load())
+
+			now = limitedAt.Add(24*time.Minute + time.Second)
+			_, err = client.GetCosts(context.Background(), query)
+			require.NoError(t, err)
+			assert.Equal(t, int32(1), hits.Load())
+		})
+	}
 }
 
 func TestRateLimitCooldownStillSendsCursorPages(t *testing.T) {
