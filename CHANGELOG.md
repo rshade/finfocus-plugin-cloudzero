@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/rshade/finfocus-plugin-cloudzero/compare/v0.1.2...v0.1.3) (2026-11-20)
+
+
+### Features
+
+* hold the rate-limit cooldown for the wait CloudZero states ([a5ad2bd](https://github.com/rshade/finfocus-plugin-cloudzero/commit/a5ad2bde5df88f14cf564f0da5930f5501c8c0fc)), closes [#26](https://github.com/rshade/finfocus-plugin-cloudzero/issues/26)
+
 ## [0.1.2](https://github.com/rshade/finfocus-plugin-cloudzero/compare/v0.1.1...v0.1.2) (2026-11-20)
 
 
