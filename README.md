@@ -1,8 +1,8 @@
 # FinFocus CloudZero Plugin
 
-FinFocus plugin that reads historical cost from the CloudZero REST API v2.
-It covers AWS, Azure, and GCP resources when a resource-level CloudZero
-dimension is configured.
+FinFocus plugin that reads historical cost and budgets from the CloudZero REST
+API v2. Cost covers AWS, Azure, and GCP resources when a resource-level
+CloudZero dimension is configured.
 
 ## v0.1.0 limitations
 
@@ -42,10 +42,11 @@ Live checks belong to the owner. `make test-integration` skips unless
 | --- | --- |
 | GetActualCost | Daily rows from `GET /v2/billing/costs` |
 | BatchCost | Actual cost only. One upstream call per filter group |
+| GetBudgets | CloudZero's monthly budgets with this month's spend, from `GET /v2/budgets` |
 | GetProjectedCost, GetPricingSpec, EstimateCost | `Unimplemented` |
-| Supports | Actual cost for AWS, Azure, and GCP when a key and a resource dimension are set |
+| Supports | Actual cost for AWS, Azure, and GCP when a key and a resource dimension are set. Budgets when a key is set |
 
-`GetPluginInfo` advertises `ACTUAL_COSTS` and `BATCH_COST` only. The plugin
+`GetPluginInfo` advertises `ACTUAL_COSTS`, `BATCH_COST`, and `BUDGETS`. The plugin
 reports the name `cloudzero`, its registry name, so `--adapter cloudzero`
 selects it.
 
@@ -54,6 +55,25 @@ a `$0` cost. Each row's `source` names CloudZero, the cost type, and the
 configured currency. `expires_at` is computed here. Closed months use
 `CLOUDZERO_CACHE_TTL` (default 6 hours). The newest two days use
 `CLOUDZERO_RECENT_TTL` (default 1 hour).
+
+### Budgets
+
+`GetBudgets` lists the budgets kept in CloudZero. Each one's limit is its
+planned amount for the current UTC month, in `CLOUDZERO_CURRENCY`, and its
+status is the month's actual spend that CloudZero reports. FinFocus core works
+out the percentage used, the forecast, and the health from those two numbers.
+CloudZero alert percentages that are switched on become actual-spend
+thresholds. The CloudZero view a budget covers is kept in its metadata as
+`cloudzero_view_id`.
+
+Budgets that are not monthly, or that plan nothing for the current month, are
+left out, and a debug log line counts them. A budget with no granularity counts
+as monthly. The list comes from one call, cached for `CLOUDZERO_RECENT_TTL`, and
+that call spends one request from `CLOUDZERO_DAILY_BUDGET`. The budgets
+response has not been seen with data from a live account yet.
+
+A budget's source is `cloudzero`, so a FinFocus provider filter such as `aws`
+hides it: a CloudZero budget can cover several providers.
 
 ## Configuration
 
@@ -77,7 +97,8 @@ the AWS Cost Explorer plugin.
 
 The key needs the fixed scopes `billing:read_costs` and
 `billing:read_dimensions`. Add `billing:read_resource_tags` only if you also
-read tags. The costs call sends the key as a bare `Authorization` value.
+read tags. The budgets page names no scope; a key with these scopes read
+budgets on 2026-11-19. The costs call sends the key as a bare `Authorization` value.
 There is no `Bearer` prefix.
 
 `CLOUDZERO_TAG_DIMENSIONS` does not invent dimension IDs from tag names. Map

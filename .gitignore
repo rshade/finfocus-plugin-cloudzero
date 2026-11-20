@@ -38,3 +38,4 @@ coverage.out
 !.vale/styles/config/
 .vale/styles/config/*
 !.vale/styles/config/vocabularies/
+PR_MESSAGE.md

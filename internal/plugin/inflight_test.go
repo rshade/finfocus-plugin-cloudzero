@@ -28,7 +28,7 @@ func TestGetActualCostConcurrentRequestsShareOneCall(t *testing.T) {
 		czrn := fmt.Sprintf("czrn:aws:ec2:us-east-1:123456789012:instance:i-%d", i)
 		rows[i] = costRow(day(2026, 3, 15), float64(i+1), czrn)
 	}
-	costs := &fakeCosts{rows: rows, gate: make(chan struct{})}
+	costs := &fakeCloudZero{rows: rows, gate: make(chan struct{})}
 	plug := gatedPlugin(costs)
 
 	answers := make([]<-chan actualAnswer, requests)
@@ -50,7 +50,7 @@ func TestGetActualCostConcurrentRequestsShareOneCall(t *testing.T) {
 
 func TestGetActualCostWaiterHonorsItsContext(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{
+	costs := &fakeCloudZero{
 		rows: []czclient.CostRow{
 			costRow(day(2026, 3, 15), 1, firstCZRN),
 			costRow(day(2026, 3, 15), 2, secondCZRN),
@@ -68,7 +68,7 @@ func TestGetActualCostWaiterHonorsItsContext(t *testing.T) {
 
 	cancel()
 	assert.Equal(t, codes.Canceled, status.Code(receive(t, leaving).err))
-	assert.Equal(t, 1, plug.fetches.waiting())
+	assert.Equal(t, 1, plug.costsInFlight.waiting())
 
 	close(costs.gate)
 	got := receive(t, staying)
@@ -80,7 +80,7 @@ func TestGetActualCostWaiterHonorsItsContext(t *testing.T) {
 
 func TestGetActualCostSharedFailureIsNotCached(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{
+	costs := &fakeCloudZero{
 		err:  &czclient.APIError{Kind: czclient.KindRateLimit, Status: 429},
 		gate: make(chan struct{}),
 	}
@@ -105,7 +105,7 @@ func TestGetActualCostSharedFailureIsNotCached(t *testing.T) {
 
 func TestGetActualCostCanceledCallerStartsNoFetch(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{rows: []czclient.CostRow{costRow(day(2026, 3, 15), 1, firstCZRN)}}
+	costs := &fakeCloudZero{rows: []czclient.CostRow{costRow(day(2026, 3, 15), 1, firstCZRN)}}
 	plug := gatedPlugin(costs)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -129,7 +129,7 @@ func TestDetachedKeepsDeadlineNotCancel(t *testing.T) {
 	assert.Equal(t, deadline, got)
 }
 
-func gatedPlugin(costs *fakeCosts) *CloudZeroPlugin {
+func gatedPlugin(costs *fakeCloudZero) *CloudZeroPlugin {
 	plug := fakePlugin(readyConfig(), costs)
 	plug.now = func() time.Time { return day(2026, 4, 1) }
 	return plug
@@ -146,7 +146,7 @@ func askActual(ctx context.Context, plug *CloudZeroPlugin, arn string) <-chan ac
 
 func waitForWaiters(t *testing.T, plug *CloudZeroPlugin, want int) {
 	t.Helper()
-	require.Eventually(t, func() bool { return plug.fetches.waiting() == want }, 5*time.Second, time.Millisecond)
+	require.Eventually(t, func() bool { return plug.costsInFlight.waiting() == want }, 5*time.Second, time.Millisecond)
 }
 
 func receive[T any](t *testing.T, ch <-chan T) T {

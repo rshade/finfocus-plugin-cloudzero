@@ -1,0 +1,49 @@
+{
+  "budgets": [
+    {
+      "id": "00000000-0000-0000-0000-00000000b001",
+      "name": "Platform monthly",
+      "view": {"id": "00000000-0000-0000-0000-00000000f001"},
+      "planned_limits": {
+        "monthly": {
+          "2026-10-01": {"amount": "450.00"},
+          "2026-11-01": {"amount": "500.00"}
+        }
+      },
+      "alerts": {"80": "Y", "100": "N"},
+      "cost_type": "real_cost",
+      "granularity": "monthly",
+      "created": "2026-01-05T00:00:00Z",
+      "last_updated": "2026-11-01T00:00:00Z",
+      "current": {"planned": "500.00", "actual": "120.50"}
+    },
+    {
+      "id": "00000000-0000-0000-0000-00000000b002",
+      "name": "Data quarterly",
+      "view": {"id": "00000000-0000-0000-0000-00000000f002"},
+      "planned_limits": {
+        "monthly": {
+          "2026-11-01": {"amount": "900.00"}
+        }
+      },
+      "alerts": {"90": "Y"},
+      "cost_type": "real_cost",
+      "granularity": "quarterly",
+      "created": "2026-02-01T00:00:00Z",
+      "last_updated": "2026-10-01T00:00:00Z",
+      "current": {"planned": "900.00", "actual": "300.00"}
+    }
+  ],
+  "pagination": {
+    "page_count": 1,
+    "item_count": 2,
+    "total_count": 2,
+    "cursor": {
+      "next_cursor": null,
+      "previous_cursor": null,
+      "has_next": false,
+      "has_previous": false
+    }
+  },
+  "total_count": 2
+}

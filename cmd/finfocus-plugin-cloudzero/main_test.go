@@ -54,4 +54,5 @@ func TestBinaryAnnouncesPortAndCapabilities(t *testing.T) {
 	info, err := pbc.NewCostSourceServiceClient(conn).GetPluginInfo(ctx, &pbc.GetPluginInfoRequest{})
 	require.NoError(t, err)
 	require.Equal(t, plugin.Info(version).Capabilities, info.GetCapabilities())
+	require.Contains(t, info.GetCapabilities(), pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS)
 }

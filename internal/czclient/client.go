@@ -1,4 +1,4 @@
-// Package czclient calls the CloudZero REST API v2 cost and dimension endpoints.
+// Package czclient calls the CloudZero REST API v2 read endpoints.
 package czclient
 
 import (
@@ -115,23 +115,39 @@ func (c *Client) GetDimensions(ctx context.Context) ([]Dimension, error) {
 // KindRateLimit for five minutes without being sent or spending budget. Cursor
 // pages are still sent: CloudZero does not count them.
 func (c *Client) GetCosts(ctx context.Context, q CostQuery) ([]CostRow, error) {
-	rows, err := c.pages(ctx, q)
-	var api *APIError
-	if errors.As(err, &api) && api.Kind == KindExpired {
-		return c.pages(ctx, q)
-	}
-	return rows, err
+	return fetchAll(ctx, c, "/billing/costs", func(cursor string) url.Values {
+		return queryValues(q, cursor)
+	}, parseCosts)
 }
 
-func (c *Client) pages(ctx context.Context, q CostQuery) ([]CostRow, error) {
+// pageParser decodes one page into its items, the next cursor, and whether
+// another page follows.
+type pageParser[T any] func(body []byte) ([]T, string, bool, error)
+
+// fetchAll reads every page of a cursor-paged list and restarts it once when
+// CloudZero answers 410 because a cursor expired.
+func fetchAll[T any](
+	ctx context.Context, c *Client, path string, query func(cursor string) url.Values, parse pageParser[T],
+) ([]T, error) {
+	items, err := pages(ctx, c, path, query, parse)
+	var api *APIError
+	if errors.As(err, &api) && api.Kind == KindExpired {
+		return pages(ctx, c, path, query, parse)
+	}
+	return items, err
+}
+
+func pages[T any](
+	ctx context.Context, c *Client, path string, query func(cursor string) url.Values, parse pageParser[T],
+) ([]T, error) {
 	var (
-		all    []CostRow
+		all    []T
 		cursor string
 		seen   = map[string]struct{}{}
 		charge = true
 	)
 	for range maxPages {
-		body, code, err := c.get(ctx, "/billing/costs", queryValues(q, cursor), charge)
+		body, code, err := c.get(ctx, path, query(cursor), charge)
 		charge = false
 		if err != nil {
 			return nil, err
@@ -139,11 +155,11 @@ func (c *Client) pages(ctx context.Context, q CostQuery) ([]CostRow, error) {
 		if code != http.StatusOK {
 			return nil, responseError(code, body)
 		}
-		rows, next, hasNext, err := parseCosts(body)
+		items, next, hasNext, err := parse(body)
 		if err != nil {
 			return nil, err
 		}
-		all = append(all, rows...)
+		all = append(all, items...)
 		if !hasNext || next == "" {
 			return all, nil
 		}

@@ -14,7 +14,7 @@ context: |
   Verified live on 2026-11-17 for AWS only. Azure and GCP behaviour is unverified.
   Live CloudZero calls need the owner's go-ahead. Credentials come from ESC
   finfocus-dev/cloudzero through esc run.
-  Tests use testify require and assert, t.Parallel, and the plugin.CostSource fake.
+  Tests use testify require and assert, t.Parallel, and the plugin.CloudZero fake.
   Release Please owns CHANGELOG.md and the release manifest. Conventional commits.
   No absolute machine paths in committed files.
 

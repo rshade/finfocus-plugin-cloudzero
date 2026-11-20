@@ -6,13 +6,15 @@ must stay inside these boundaries.
 
 ## Core Architectural Identity
 
-**Live/Runtime gRPC actual-cost plugin for CloudZero.**
+**Live/Runtime gRPC read-only plugin for what CloudZero has billed and
+recorded.**
 
 `finfocus-plugin-cloudzero` is a FinFocus cost source that reads what a cloud
 resource has already cost, per day, from the CloudZero billing costs API. It
 answers `GetActualCost` and actual-cost `BatchCost` for AWS, Azure, and GCP
-resources. It is a reader of CloudZero's ledger, not a pricing engine: it never
-predicts, estimates, or prices anything CloudZero has not billed.
+resources, and `GetBudgets` from the budgets CloudZero keeps. It is a reader of
+CloudZero's records, not a pricing engine: it never predicts, estimates, or
+prices anything CloudZero has not billed.
 
 ## Technical Boundaries ("Hard No's")
 
@@ -33,8 +35,9 @@ predicts, estimates, or prices anything CloudZero has not billed.
    configured `tagKey=dimensionID` pairs. `CloudProvider` spellings are read
    from CloudZero's own rows and never hardcoded.
 5. **No writes to CloudZero.** The plugin uses the read-only scopes
-   `billing:read_costs` and `billing:read_dimensions`. It never sends AnyCost
-   data, telemetry, or CostFormation changes.
+   `billing:read_costs` and `billing:read_dimensions`, and reads budgets with
+   the same key. It never sends AnyCost data, telemetry, or CostFormation
+   changes, and never creates or edits a budget.
 6. **No infrastructure access.** The plugin does not call AWS, Azure, or GCP,
    and never checks whether a resource exists. Its only inputs are the
    `ResourceDescriptor` from core and CloudZero's response.
@@ -54,6 +57,9 @@ predicts, estimates, or prices anything CloudZero has not billed.
 - **Resource identity**: a CloudZero resource name (CZRN). An AWS ARN is
   converted. A bare AWS id with a known prefix matches by CZRN suffix. Azure
   and GCP resources need a `czrn:` id from the caller.
+- **Budgets**: CloudZero `GET /v2/budgets` with `expand=current`. Monthly
+  budgets only. The limit is the current month's planned amount, and the status
+  is CloudZero's actual. Core derives health and forecast.
 - **Currency**: not in the response. `CLOUDZERO_CURRENCY` labels results.
 - **Freshness**: CloudZero sends no TTL. The plugin computes `expires_at`: a
   short TTL for the newest two days, `CLOUDZERO_CACHE_TTL` for older days.
@@ -67,7 +73,8 @@ predicts, estimates, or prices anything CloudZero has not billed.
 - **Telemetry**: structured JSON logs (`zerolog`) on `stderr`.
 - **Network strategy**: fetch and cache.
   - **Fetch**: one month-aligned query per shared filter set, with cursor
-    paging. Cursor pages do not count against the CloudZero limit.
+    paging. Cursor pages do not count against the CloudZero limit. Budgets are
+    one list query, cached for `CLOUDZERO_RECENT_TTL`.
   - **Budget**: a per-process counter stops before `CLOUDZERO_DAILY_BUDGET`
     (default 50). Every first-page attempt counts, retries included.
   - **Resilience**: a short retry for transport errors and HTTP 5xx, one

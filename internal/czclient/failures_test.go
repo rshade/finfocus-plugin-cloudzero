@@ -26,13 +26,14 @@ func TestAPIErrorText(t *testing.T) {
 	}
 	assert.Equal(t, KindUnavailable, statusKind(http.StatusBadGateway))
 	assert.Equal(t, KindBadRequest, statusKind(http.StatusBadRequest))
+	assert.Equal(t, "CloudZero rejected the request", newAPIError(KindBadRequest, http.StatusBadRequest).Error())
 
 	limited := &APIError{Kind: KindRateLimit, Status: http.StatusTooManyRequests}
-	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry later", limited.Error())
+	assert.Equal(t, "CloudZero allows 60 requests in a rolling 24 hours; retry later", limited.Error())
 	limited.RetryAfter = 24 * time.Minute
-	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry in 24 minutes", limited.Error())
+	assert.Equal(t, "CloudZero allows 60 requests in a rolling 24 hours; retry in 24 minutes", limited.Error())
 	limited.RetryAfter = time.Minute
-	assert.Equal(t, "CloudZero allows 60 cost requests in a rolling 24 hours; retry in 1 minute", limited.Error())
+	assert.Equal(t, "CloudZero allows 60 requests in a rolling 24 hours; retry in 1 minute", limited.Error())
 	limited.RetryAfter = 23*time.Minute + 30*time.Second
 	assert.Contains(t, limited.Error(), "retry in 24 minutes", "a part minute rounds up")
 	limited.RetryAfter = time.Second

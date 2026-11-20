@@ -20,31 +20,44 @@ import (
 const (
 	pluginName       = "cloudzero"
 	defaultBatchSize = 100
+	keyNotSet        = "set CLOUDZERO_API_KEY"
 )
 
-// CostSource is the CloudZero call the plugin depends on. *czclient.Client
-// implements it. Tests substitute a fake.
+// CostSource reads CloudZero costs.
 type CostSource interface {
 	GetCosts(ctx context.Context, q czclient.CostQuery) ([]czclient.CostRow, error)
+}
+
+// BudgetSource reads CloudZero budgets with their current spend.
+type BudgetSource interface {
+	GetBudgets(ctx context.Context) ([]czclient.Budget, error)
+}
+
+// CloudZero is every CloudZero read the plugin depends on. *czclient.Client
+// implements it. Tests substitute a fake.
+type CloudZero interface {
+	CostSource
+	BudgetSource
 }
 
 // CloudZeroPlugin implements the cost RPCs CloudZero can answer.
 type CloudZeroPlugin struct {
 	pbc.UnimplementedCostSourceServiceServer
 
-	version string
-	cfg     config.Config
-	client  CostSource
-	logger  zerolog.Logger
-	mapper  *mapping.Mapper
-	cache   *cache.Cache
-	fetches *inflight
-	now     func() time.Time
+	version         string
+	cfg             config.Config
+	client          CloudZero
+	logger          zerolog.Logger
+	mapper          *mapping.Mapper
+	cache           *cache.Cache
+	costsInFlight   *inflight[[]czclient.CostRow]
+	budgetsInFlight *inflight[[]czclient.Budget]
+	now             func() time.Time
 }
 
 // New returns a plugin. It starts without an API key. Cost RPCs then fail
 // with FailedPrecondition.
-func New(version string, cfg config.Config, client CostSource, logger zerolog.Logger) *CloudZeroPlugin {
+func New(version string, cfg config.Config, client CloudZero, logger zerolog.Logger) *CloudZeroPlugin {
 	return &CloudZeroPlugin{
 		UnimplementedCostSourceServiceServer: pbc.UnimplementedCostSourceServiceServer{},
 		version:                              version,
@@ -53,7 +66,8 @@ func New(version string, cfg config.Config, client CostSource, logger zerolog.Lo
 		logger:                               logger,
 		mapper:                               mapping.NewMapper(logger, cfg.TagDimensions, cfg.ResourceDimension),
 		cache:                                cache.NewCache(),
-		fetches:                              newInflight(),
+		costsInFlight:                        newInflight[[]czclient.CostRow](),
+		budgetsInFlight:                      newInflight[[]czclient.Budget](),
 		now:                                  time.Now,
 	}
 }
@@ -63,8 +77,8 @@ func (p *CloudZeroPlugin) Name() string {
 	return pluginName
 }
 
-// Info is the metadata served by GetPluginInfo. Capabilities are only actual
-// cost and batch actual cost.
+// Info is the metadata served by GetPluginInfo. Capabilities are actual cost,
+// batch actual cost, and budgets.
 func Info(version string) *pluginsdk.PluginInfo {
 	return &pluginsdk.PluginInfo{
 		Name:        pluginName,
@@ -74,12 +88,14 @@ func Info(version string) *pluginsdk.PluginInfo {
 		Capabilities: []pbc.PluginCapability{
 			pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS,
 			pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST,
+			pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
 		},
 	}
 }
 
-// Supports declines anything other than actual cost for aws, azure, and gcp
-// when a key and a resource dimension are configured.
+// Supports accepts actual cost, batch cost, and budgets for aws, azure, and
+// gcp when a key is configured. Cost capabilities also need a resource
+// dimension.
 func (p *CloudZeroPlugin) Supports(_ context.Context, req *pbc.SupportsRequest) (*pbc.SupportsResponse, error) {
 	if req == nil || req.GetResource() == nil {
 		return decline("invalid resource descriptor"), nil
@@ -87,8 +103,15 @@ func (p *CloudZeroPlugin) Supports(_ context.Context, req *pbc.SupportsRequest) 
 	if !mapping.SupportedProvider(req.GetResource().GetProvider()) {
 		return decline("provider is not aws, azure, or gcp"), nil
 	}
-	if !allowedCapability(req.GetCapability()) {
-		return decline("only actual cost is supported"), nil
+	capability := req.GetCapability()
+	if !allowedCapability(capability) {
+		return decline("only actual cost, batch cost, and budgets are supported"), nil
+	}
+	if capability == pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS {
+		if !p.cfg.HasAPIKey() {
+			return decline(keyNotSet), nil
+		}
+		return &pbc.SupportsResponse{Supported: true}, nil
 	}
 	if missing := p.missingSetting(); missing != "" {
 		return decline(missing), nil
@@ -100,7 +123,7 @@ func (p *CloudZeroPlugin) Supports(_ context.Context, req *pbc.SupportsRequest) 
 // or returns an empty string when the plugin is ready.
 func (p *CloudZeroPlugin) missingSetting() string {
 	if !p.cfg.HasAPIKey() {
-		return "set CLOUDZERO_API_KEY"
+		return keyNotSet
 	}
 	if p.cfg.ResourceDimension == "" {
 		return "set CLOUDZERO_RESOURCE_DIMENSION to a resource-level dimension ID"
@@ -110,7 +133,8 @@ func (p *CloudZeroPlugin) missingSetting() string {
 
 func allowedCapability(capability pbc.PluginCapability) bool {
 	return capability == pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS ||
-		capability == pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST
+		capability == pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST ||
+		capability == pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS
 }
 
 func decline(reason string) *pbc.SupportsResponse {

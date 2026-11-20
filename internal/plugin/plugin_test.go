@@ -28,31 +28,39 @@ const (
 	secondCZRN = "czrn:aws:ec2:us-east-1:123456789012:instance:i-2"
 )
 
-func TestInfoDeclaresActualAndBatchOnly(t *testing.T) {
+func TestInfoDeclaresCapabilities(t *testing.T) {
 	t.Parallel()
 	info := Info("0.1.0")
 	assert.Equal(t, []pbc.PluginCapability{
 		pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS,
 		pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST,
+		pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
 	}, info.Capabilities)
 	logger := zerolog.Nop()
-	server := pluginsdk.NewServerWithOptions(fakePlugin(config.Config{}, &fakeCosts{}), nil, &logger, info)
+	server := pluginsdk.NewServerWithOptions(fakePlugin(config.Config{}, &fakeCloudZero{}), nil, &logger, info)
 	got, err := server.GetPluginInfo(context.Background(), &pbc.GetPluginInfoRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, info.Capabilities, got.GetCapabilities())
 	assert.Equal(t, "cloudzero", got.GetName())
-	assert.Equal(t, "cloudzero", fakePlugin(config.Config{}, &fakeCosts{}).Name())
+	assert.Equal(t, "cloudzero", fakePlugin(config.Config{}, &fakeCloudZero{}).Name())
 }
 
 func TestSupports(t *testing.T) {
 	t.Parallel()
-	ready := fakePlugin(readyConfig(), &fakeCosts{})
+	ready := fakePlugin(readyConfig(), &fakeCloudZero{})
 	aws := &pbc.ResourceDescriptor{Provider: "aws", ResourceType: "aws:ec2/instance:Instance"}
 	resp, err := ready.Supports(context.Background(), &pbc.SupportsRequest{
 		Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS,
 	})
 	require.NoError(t, err)
 	assert.True(t, resp.GetSupported())
+
+	budgetsOnly := fakePlugin(config.Config{APIKey: "k"}, &fakeCloudZero{})
+	resp, err = budgetsOnly.Supports(context.Background(), &pbc.SupportsRequest{
+		Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
+	})
+	require.NoError(t, err)
+	assert.True(t, resp.GetSupported(), "budgets need only the key")
 
 	tests := []struct {
 		name string
@@ -67,12 +75,20 @@ func TestSupports(t *testing.T) {
 			&pbc.SupportsRequest{Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_PROJECTED_COSTS},
 		},
 		{"unspecified", ready, &pbc.SupportsRequest{Resource: aws}},
-		{"no key", fakePlugin(config.Config{ResourceDimension: "Resource"}, &fakeCosts{}), &pbc.SupportsRequest{
+		{"no key", fakePlugin(config.Config{ResourceDimension: "Resource"}, &fakeCloudZero{}), &pbc.SupportsRequest{
 			Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS,
 		}},
-		{"no dimension", fakePlugin(config.Config{APIKey: "k"}, &fakeCosts{}), &pbc.SupportsRequest{
+		{"no dimension", fakePlugin(config.Config{APIKey: "k"}, &fakeCloudZero{}), &pbc.SupportsRequest{
 			Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST,
 		}},
+		{"budgets without key", fakePlugin(config.Config{}, &fakeCloudZero{}), &pbc.SupportsRequest{
+			Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
+		}},
+		{
+			"recommendations",
+			ready,
+			&pbc.SupportsRequest{Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,7 +103,7 @@ func TestSupports(t *testing.T) {
 
 func TestUnimplementedCostRPCs(t *testing.T) {
 	t.Parallel()
-	plug := fakePlugin(readyConfig(), &fakeCosts{})
+	plug := fakePlugin(readyConfig(), &fakeCloudZero{})
 	_, err := plug.GetProjectedCost(context.Background(), &pbc.GetProjectedCostRequest{})
 	assert.Equal(t, codes.Unimplemented, status.Code(err))
 	_, err = plug.GetPricingSpec(context.Background(), &pbc.GetPricingSpecRequest{})
@@ -96,17 +112,42 @@ func TestUnimplementedCostRPCs(t *testing.T) {
 	assert.Equal(t, codes.Unimplemented, status.Code(err))
 }
 
-// fakeCosts records every query and answers with fixed rows or a fixed error.
-// A non-nil gate holds each call open until the test closes it.
-type fakeCosts struct {
-	mu      sync.Mutex
-	rows    []czclient.CostRow
-	err     error
-	queries []czclient.CostQuery
-	gate    chan struct{}
+// fakeCloudZero records every cost query and budget fetch and answers with
+// fixed rows, budgets, or errors. A non-nil gate holds each call open until
+// the test closes it.
+type fakeCloudZero struct {
+	mu          sync.Mutex
+	rows        []czclient.CostRow
+	err         error
+	queries     []czclient.CostQuery
+	gate        chan struct{}
+	budgets     []czclient.Budget
+	budgetErr   error
+	budgetCalls int
 }
 
-func (f *fakeCosts) GetCosts(ctx context.Context, q czclient.CostQuery) ([]czclient.CostRow, error) {
+func (f *fakeCloudZero) GetBudgets(ctx context.Context) ([]czclient.Budget, error) {
+	f.mu.Lock()
+	f.budgetCalls++
+	budgets, err, gate := f.budgets, f.budgetErr, f.gate
+	f.mu.Unlock()
+	if gate != nil {
+		select {
+		case <-gate:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	return budgets, err
+}
+
+func (f *fakeCloudZero) budgetFetches() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.budgetCalls
+}
+
+func (f *fakeCloudZero) GetCosts(ctx context.Context, q czclient.CostQuery) ([]czclient.CostRow, error) {
 	f.mu.Lock()
 	f.queries = append(f.queries, q)
 	rows, err, gate := f.rows, f.err, f.gate
@@ -121,7 +162,7 @@ func (f *fakeCosts) GetCosts(ctx context.Context, q czclient.CostQuery) ([]czcli
 	return rows, err
 }
 
-func (f *fakeCosts) calls() []czclient.CostQuery {
+func (f *fakeCloudZero) calls() []czclient.CostQuery {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]czclient.CostQuery(nil), f.queries...)
@@ -142,7 +183,7 @@ func readyConfig() config.Config {
 	}
 }
 
-func fakePlugin(cfg config.Config, costs *fakeCosts) *CloudZeroPlugin {
+func fakePlugin(cfg config.Config, costs *fakeCloudZero) *CloudZeroPlugin {
 	return New("vtest", cfg, costs, zerolog.Nop())
 }
 
