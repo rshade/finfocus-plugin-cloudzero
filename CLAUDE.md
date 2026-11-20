@@ -416,6 +416,13 @@ then delete the old token. A deleted key or token stops working immediately.
 Never hand-create a release tag. release-please opens the release PR, and the
 tag must be plain `v0.1.0` (`include-component-in-tag` is false).
 
+release-please owns the release title and notes; GoReleaser only attaches
+archives, matching `finfocus-plugin-aws-public`. Keep `release.mode:
+keep-existing`, no `release.name_template`, and `changelog.disable: true` in
+`.goreleaser.yaml`. `mode: replace` overwrote the v0.1.0 to v0.1.2 notes with
+a raw commit list and retitled them; they were restored from `CHANGELOG.md`
+with `gh release edit --title vX.Y.Z --notes-file`.
+
 ## Session Learnings
 
 - Do not advertise projected cost, pricing spec, or estimate. Core treats a
@@ -432,9 +439,9 @@ tag must be plain `v0.1.0` (`include-component-in-tag` is false).
   `resource_id`. The first one that yields a CZRN wins.
 - `make cover` (`scripts/check-coverage.sh`) gates coverage at the plan.md
   CZ-15 targets: 80% overall, 95% on `internal/czclient` and `internal/plugin`.
-- `CHANGELOG.md` is not tracked until release-please creates it in the release
-  PR. GoReleaser packs it with the optional glob `CHANGELOG*.md`; a literal
-  `CHANGELOG.md` fails snapshot builds when the file is absent.
+- Archives use GoReleaser's default file list (`LICENSE*`, `README*`,
+  `CHANGELOG*`), as aws-public does. The globs are optional, so a missing
+  `CHANGELOG.md` does not fail a snapshot build; a literal path would.
 - `markdownlint-cli2` ignores `.markdownlintignore`. Its excludes live in
   `.markdownlint-cli2.jsonc` (`ignores`). `.markdownlintignore` is kept for
   the editor extension.
