@@ -5,14 +5,18 @@ import (
 )
 
 const (
-	czrnPrefix  = "czrn:"
-	arnPrefix   = "arn:"
-	cloudIDTag  = "pulumi:cloudId"
-	arnParts    = 6
-	crossRegion = "cross-region"
-	awsProvider = "aws"
-	s3Service   = "s3"
-	bucketType  = "bucket"
+	czrnPrefix = "czrn:"
+	arnPrefix  = "arn:"
+	cloudIDTag = "pulumi:cloudId"
+	// pulumiARNTag and arnTag are how core passes an ARN to a request that
+	// has no arn field of its own, such as GetRecommendations.
+	pulumiARNTag = "pulumi:arn"
+	arnTag       = "arn"
+	arnParts     = 6
+	crossRegion  = "cross-region"
+	awsProvider  = "aws"
+	s3Service    = "s3"
+	bucketType   = "bucket"
 )
 
 // awsIDTypes maps the prefix of a bare AWS id to its CZRN resource type. The

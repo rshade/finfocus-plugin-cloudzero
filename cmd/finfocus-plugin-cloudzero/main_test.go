@@ -55,4 +55,5 @@ func TestBinaryAnnouncesPortAndCapabilities(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, plugin.Info(version).Capabilities, info.GetCapabilities())
 	require.Contains(t, info.GetCapabilities(), pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS)
+	require.Contains(t, info.GetCapabilities(), pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS)
 }

@@ -136,6 +136,24 @@ func TestFilterIdentityPrecedence(t *testing.T) {
 			wantProvider: "aws",
 		},
 		{
+			name: "arn only as the pulumi:arn tag",
+			resource: &pbc.ResourceDescriptor{Provider: "aws", Region: "us-west-2", Tags: map[string]string{
+				"pulumi:cloudId": "vol-1", "pulumi:arn": "arn:aws:ec2:us-west-2:123456789012:volume/vol-1",
+			}},
+			wantID:       "czrn:aws:ec2:us-west-2:123456789012:volume:vol-1",
+			wantShared:   map[string]string{"Account": "123456789012", "Region": "us-west-2"},
+			wantProvider: "aws",
+		},
+		{
+			name: "pulumi:arn tag beats the arn tag",
+			resource: &pbc.ResourceDescriptor{Provider: "aws", Tags: map[string]string{
+				"arn": ec2ARN, "pulumi:arn": "arn:aws:ec2:us-west-2:123456789012:volume/vol-1",
+			}},
+			wantID:       "czrn:aws:ec2:us-west-2:123456789012:volume:vol-1",
+			wantShared:   map[string]string{"Account": "123456789012", "Region": "us-west-2"},
+			wantProvider: "aws",
+		},
+		{
 			name:       "descriptor arn beats a legacy czrn",
 			resource:   &pbc.ResourceDescriptor{Provider: "aws", Arn: ec2ARN},
 			resourceID: legacyCZRN,
@@ -312,6 +330,43 @@ func TestFilterMatches(t *testing.T) {
 			assert.Equal(t, tt.want, tt.filter.Matches(tt.resource, tt.provider))
 		})
 	}
+}
+
+func TestIdentityWithoutResourceDimension(t *testing.T) {
+	t.Parallel()
+	mapper := NewMapper(zerolog.Nop(), map[string]string{"Team": "User:Defined:Team"}, "")
+	volumeARN := &pbc.ResourceDescriptor{
+		Provider: "aws", Arn: "arn:aws:ec2:us-west-2:123456789012:volume/vol-1",
+		Tags: map[string]string{"Team": "platform"},
+	}
+
+	got, err := mapper.Identity(volumeARN)
+	require.NoError(t, err)
+	assert.Equal(t, "czrn:aws:ec2:us-west-2:123456789012:volume:vol-1", got.ResourceID)
+	assert.Equal(t, "aws", got.Provider)
+	assert.Empty(t, got.Shared, "identity builds no cost filters")
+
+	_, err = mapper.Filter(volumeARN, nil, "", "")
+	require.Error(t, err, "a cost filter still needs the resource dimension")
+
+	bare, err := mapper.Identity(&pbc.ResourceDescriptor{
+		Provider: "aws", Region: "us-west-2", Tags: map[string]string{"pulumi:cloudId": "vol-1"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, ":volume:vol-1", bare.ResourceSuffix)
+	assert.True(t, bare.Matches("czrn:aws:ec2:us-west-2:123456789012:volume:vol-1", "AWS"))
+
+	_, err = mapper.Identity(&pbc.ResourceDescriptor{Provider: "aws", Id: "not-a-cloud-id"})
+	require.Error(t, err)
+
+	attrs, err := structpb.NewStruct(map[string]any{"rootBlockDevice": map[string]any{"volumeId": "vol-1"}})
+	require.NoError(t, err)
+	instance, err := mapper.Identity(&pbc.ResourceDescriptor{
+		Provider: "aws", Arn: "arn:aws:ec2:us-west-2:123456789012:instance/i-1", Attributes: attrs,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, ":volume:vol-1", instance.RootVolumeSuffix, "identity carries the root volume")
+	assert.True(t, instance.MatchesRootVolume("czrn:aws:ec2:us-west-2:123456789012:volume:vol-1", "AWS"))
 }
 
 func TestFilterRejectsMissingIdentity(t *testing.T) {
