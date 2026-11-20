@@ -77,55 +77,20 @@ func (p *CloudZeroPlugin) costsFor(
 	key := strings.Join([]string{
 		from.Format(time.RFC3339), to.Format(time.RFC3339), p.cfg.CostType, filterKey(shared),
 	}, "|")
-	if rows, ok := p.cached(key); ok {
-		return rows, nil
-	}
-	filters := make(map[string][]string, len(shared))
-	for dimension, value := range shared {
-		filters[dimension] = []string{value}
-	}
-	query := czclient.CostQuery{
-		Start:    from,
-		End:      to,
-		GroupBy:  []string{p.cfg.ResourceDimension, cloudProviderDimension},
-		Filters:  filters,
-		CostType: p.cfg.CostType,
-	}
-	return p.fetches.do(ctx, key, func() ([]czclient.CostRow, error) {
-		// A call for this key may have finished, and filled the cache, after
-		// the check above.
-		if rows, ok := p.cached(key); ok {
-			return rows, nil
+	fetch := func(fetchCtx context.Context) ([]czclient.CostRow, error) {
+		filters := make(map[string][]string, len(shared))
+		for dimension, value := range shared {
+			filters[dimension] = []string{value}
 		}
-		fetchCtx, cancel := detached(ctx)
-		defer cancel()
-		rows, err := p.client.GetCosts(fetchCtx, query)
-		if err != nil {
-			return nil, err
-		}
-		p.cache.Set(key, rows, p.ttlFor(to.Add(-time.Nanosecond)))
-		return rows, nil
-	})
-}
-
-// detached keeps ctx's values and deadline but not its cancellation, so a
-// caller that gives up does not stop a fetch that others wait on, and the
-// fetch still ends by the deadline its first caller had.
-func detached(ctx context.Context) (context.Context, context.CancelFunc) {
-	free := context.WithoutCancel(ctx)
-	if deadline, ok := ctx.Deadline(); ok {
-		return context.WithDeadline(free, deadline)
+		return p.client.GetCosts(fetchCtx, czclient.CostQuery{
+			Start:    from,
+			End:      to,
+			GroupBy:  []string{p.cfg.ResourceDimension, cloudProviderDimension},
+			Filters:  filters,
+			CostType: p.cfg.CostType,
+		})
 	}
-	return free, func() {}
-}
-
-func (p *CloudZeroPlugin) cached(key string) ([]czclient.CostRow, bool) {
-	cached, ok := p.cache.Get(key)
-	if !ok {
-		return nil, false
-	}
-	rows, cast := cached.([]czclient.CostRow)
-	return rows, cast
+	return cachedFetch(ctx, p.cache, p.costsInFlight, key, p.ttlFor(to.Add(-time.Nanosecond)), fetch)
 }
 
 // filterKey serializes dimension filters with sorted keys, so equal filters

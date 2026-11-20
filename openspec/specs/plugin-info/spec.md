@@ -6,17 +6,17 @@ Identify the plugin to FinFocus core and declare only what it can answer.
 
 ## Requirements
 
-### Requirement: Declared capabilities are actual cost and batch cost
+### Requirement: Declared capabilities are what CloudZero can answer
 
 `GetPluginInfo` and the `Name` RPC SHALL report the name `cloudzero`, which is
 the plugin's FinFocus registry name. `GetPluginInfo` SHALL report the providers
-`aws`, `azure`, and `gcp`, and exactly the capabilities `ACTUAL_COSTS` and
-`BATCH_COST`. The SDK server SHALL serve the same list.
+`aws`, `azure`, and `gcp`, and exactly the capabilities `ACTUAL_COSTS`,
+`BATCH_COST`, and `BUDGETS`. The SDK server SHALL serve the same list.
 
-#### Scenario: Plugin info lists two capabilities
+#### Scenario: Plugin info lists every declared capability
 
 - **WHEN** core calls `GetPluginInfo`
-- **THEN** the capabilities are `ACTUAL_COSTS` and `BATCH_COST`, in that order
+- **THEN** the capabilities are `ACTUAL_COSTS`, `BATCH_COST`, and `BUDGETS`, in that order
 
 #### Scenario: Reported name is the registry name
 
@@ -29,14 +29,15 @@ the plugin's FinFocus registry name. `GetPluginInfo` SHALL report the providers
 - **WHEN** the binary starts and prints `PORT=<n>` on stdout
 - **THEN** `GetPluginInfo` over gRPC on that port returns the declared capabilities
 
-Tested by: TestInfoDeclaresActualAndBatchOnly, TestBinaryAnnouncesPortAndCapabilities
+Tested by: TestInfoDeclaresCapabilities, TestBinaryAnnouncesPortAndCapabilities
 
 ### Requirement: Supports declines anything the plugin cannot answer
 
 `Supports` SHALL decline, with a non-empty reason, a missing descriptor, a
 provider other than aws, azure, or gcp, any capability other than
-`ACTUAL_COSTS` or `BATCH_COST` (including an unspecified one), a missing API
-key, and a missing resource dimension. Otherwise it SHALL answer supported.
+`ACTUAL_COSTS`, `BATCH_COST`, or `BUDGETS` (including an unspecified one), and
+a missing API key. It SHALL decline a missing resource dimension for
+`ACTUAL_COSTS` and `BATCH_COST` only. Otherwise it SHALL answer supported.
 
 #### Scenario: Ready plugin supports actual cost for AWS
 
@@ -47,6 +48,11 @@ key, and a missing resource dimension. Otherwise it SHALL answer supported.
 
 - **WHEN** the request names no capability
 - **THEN** `Supports` declines with a reason
+
+#### Scenario: Budgets need only the key
+
+- **WHEN** the key is set, no resource dimension is set, and the request is AWS budgets
+- **THEN** `Supports` answers supported
 
 Tested by: TestSupports
 

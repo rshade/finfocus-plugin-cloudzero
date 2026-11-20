@@ -51,13 +51,13 @@ func (e *APIError) Error() string {
 	case KindAuth:
 		return "CloudZero rejected the API key"
 	case KindBadRequest:
-		return "CloudZero rejected the cost query"
+		return "CloudZero rejected the request"
 	case KindRateLimit:
-		return "CloudZero allows 60 cost requests in a rolling 24 hours; " + e.retryText()
+		return "CloudZero allows 60 requests in a rolling 24 hours; " + e.retryText()
 	case KindExpired:
-		return "CloudZero cost page expired"
+		return "CloudZero page cursor expired"
 	case KindBudget:
-		return "CloudZero cost request budget is exhausted; retry tomorrow"
+		return "CloudZero request budget is exhausted; retry tomorrow"
 	case KindMalformed:
 		return "CloudZero response is not valid JSON"
 	case KindUnavailable:

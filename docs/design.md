@@ -235,6 +235,21 @@ on a live account. See the README "v0.1.0 limitations" section.
 - **Pagination**: `pagination.cursor.next_cursor` and `has_next`. 10,000 rows
   per page. A cursor expires after 24 hours (HTTP 410). Restart once
 
+### Budgets endpoint
+
+- **Status**: Schema documented. A live call on 2026-11-19 returned HTTP 200
+  with an empty list, so the read key works, but no budget has been seen live
+- **Endpoint**: `GET /v2/budgets?expand=current`, paged by the same cursor as
+  costs. The first page spends one request from `CLOUDZERO_DAILY_BUDGET`
+- **Budget**: `id`, `name`, `view.id`, `granularity`, `planned_limits.monthly`
+  (a date key to `{"amount"}`), `alerts` (a percentage key to `"Y"` or `"N"`),
+  and with `expand=current`, `current: {planned, actual}`. Amounts are parsed
+  from numbers or numeric strings, and date keys from `YYYY-MM-DD` or `YYYY-MM`
+- **Mapping**: monthly budgets only. The limit is the planned amount for the
+  current UTC month, and the status carries the actual as current spend.
+  Enabled alerts become actual-spend thresholds. Core derives percentage used,
+  forecast, and health, so the plugin never forecasts
+
 ### Verified on a live account (2026-11-17)
 
 - Bare-key auth and the costs response shape
@@ -281,11 +296,11 @@ documented as dimension values.
 | Resource dimension unset | FailedPrecondition | "set CLOUDZERO_RESOURCE_DIMENSION" | n/a |
 | Missing cloud id or bad window | InvalidArgument | fixed text with no key, URL, or body | n/a |
 | HTTP 401 or 403 | PermissionDenied | "CloudZero rejected the API key" | n/a |
-| HTTP 429 | ResourceExhausted | "60 cost requests in a rolling 24 hours; retry in N minutes", or "retry later" when the body states no wait | n/a |
+| HTTP 429 | ResourceExhausted | "60 requests in a rolling 24 hours; retry in N minutes", or "retry later" when the body states no wait | n/a |
 | Budget spent | ResourceExhausted | "budget is exhausted; retry tomorrow" | n/a |
 | HTTP 5xx after retries | Unavailable | "CloudZero is unavailable" | n/a |
 | Malformed body | Unavailable | "CloudZero response is not valid JSON" | n/a |
-| HTTP 410 twice | Unavailable | "CloudZero cost page expired" | n/a |
+| HTTP 410 twice | Unavailable | "CloudZero page cursor expired" | n/a |
 | Network error or timeout | Unavailable | "CloudZero is unavailable" | n/a |
 | Empty `costs` array | success, no rows | not a `$0` row | RECOMMENDED |
 
@@ -302,6 +317,12 @@ documented as dimension values.
 - Actual cost and batch actual cost against the documented costs API
 - Cursor pagination, a short retry, and a per-process request budget
 - Plugin-side month cache
+
+### Next
+
+- Budgets from `GET /v2/budgets` (`add-cloudzero-budgets`)
+- Recommendations from `GET /v2/optimize/recommendations`
+  (`add-cloudzero-recommendations`)
 
 ### v0.2.0
 

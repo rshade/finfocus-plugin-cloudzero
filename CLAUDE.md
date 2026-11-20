@@ -50,6 +50,15 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
 
 ### Optional Methods
 
+- **GetBudgets()**: CloudZero's monthly budgets from `GET /v2/budgets?expand=current`
+  - Limit is the current UTC month's planned amount. Non-monthly budgets and
+    months with nothing planned are left out and counted in a debug log. A
+    missing `granularity` counts as monthly
+  - Status is set whatever `include_status` says (core never sends it) and
+    carries only the actual as current spend. A budget without an actual is
+    listed without a status. Core derives percentage, forecast, and health
+  - One list call per `CLOUDZERO_RECENT_TTL`, charged like a costs first page.
+    `Supports` accepts `BUDGETS` with only the key set
 - **GetPricingSpec()**: `codes.Unimplemented`
 - **EstimateCost()**: `codes.Unimplemented`
 - **DryRun()**: not implemented. The plugin has no `DryRunHandler`, so the SDK server returns `Unimplemented`
@@ -100,8 +109,9 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
 #### `plugin/plugin.go`
 
 - Implements `CostSourceService` gRPC interface
-- Orchestrates the `CostSource` client, `Mapper`, and `Cache`. The cost path is
-  in `actual.go` and `batch.go`
+- Orchestrates the `CloudZero` client, `Mapper`, and `Cache`. The cost path is
+  in `actual.go` and `batch.go`, the budget path in `budgets.go`. Both read
+  through `cachedFetch` (`inflight.go`)
 - `status.go` maps each `czclient.Kind` to a gRPC status code with a fixed
   message. The upstream body is never forwarded
 - Logging via zerolog. There are no metrics
@@ -162,8 +172,8 @@ p.logger.Info().Msg("got response: " + strconv.Itoa(code))
 
 - Place in same package with `_test.go` suffix
 - Use table-driven tests for multiple cases
-- Fake CloudZero in plugin tests through the `plugin.CostSource` interface
-  (`fakeCosts` in `internal/plugin/plugin_test.go`). `*czclient.Client` implements it
+- Fake CloudZero in plugin tests through the `plugin.CloudZero` interface
+  (`fakeCloudZero` in `internal/plugin/plugin_test.go`). `*czclient.Client` implements it
 - Test `czclient` itself against `httptest` servers
 
 ### Integration Tests
@@ -234,6 +244,21 @@ func TestFilterCloudIdentifiers(t *testing.T) {
 - The limit is a rolling 24 hours. The 429 body says "Please wait N minute(s)"
 - `end_date` is exclusive. The current UTC day appears as a partial row
   (checked 2026-11-18, #7)
+
+### Verified live on 2026-11-19 (recommendations and budgets)
+
+- The existing read key gets HTTP 200 from `GET /v2/optimize/recommendations`
+  and `GET /v2/budgets`. No new scope is needed
+- A recommendation's `resource` is a CZRN, the same form as the costs
+  `Resource` dimension. `recommendation_id` is a stable string
+  (`CIR-AWS-00010-<hash>`), and `created` is Unix seconds
+- Recommendations default to `cost_impact_last_30_days[gte]=1.00`. A small
+  account shows none until the filter is lowered (`0.01` is the floor)
+- `limit` acts as the page size. Paging uses the same cursor shape as costs
+- One call returned HTTP 504 `{"message": "Endpoint request timed out"}`. The
+  retry seconds later succeeded in under 2 seconds
+- The owner's organization has no budgets, so the budget response has not
+  been seen with data
 
 ### Unverified
 
@@ -339,8 +364,9 @@ and get no issue. Spikes carry `spike` and a `timebox/*` label instead of
   rate-limit error for 5 minutes, without sending it (`rateLimitCooldown`).
   Cursor pages are still sent. Tests replace the clock through `Client.now`
 - Concurrent requests with the same cache key share one in-flight call
-  (`inflight` in `internal/plugin`). The call ignores its first caller's
-  cancellation but keeps its deadline (`detached`). A caller already canceled
+  (`inflight[T]` in `internal/plugin`, one instance per result type). The
+  call ignores its first caller's cancellation but keeps its deadline
+  (`detached`). A caller already canceled
   starts no call. Errors reach every waiter and are not cached
 
 ### Cache Invalidation
@@ -391,6 +417,11 @@ tag must be plain `v0.1.0` (`include-component-in-tag` is false).
   `env -u GH_TOKEN /usr/bin/gh` for those.
 - `align_to_granularity` is a documented costs parameter (facts §3). The
   research facts in `finfocus-pm` are more complete than `docs/design.md`.
+- gosec G101 flags any identifier containing `APIKey`, even a constant that
+  holds only a hint such as "set CLOUDZERO_API_KEY". Name it for what it
+  says (`keyNotSet`).
+- `make cover` runs `go test ./...`, so any failing test, including the
+  `test/openspec` link check, fails the gate with no coverage printed.
 - `finfocus-spec` v0.7.12 matches core. v0.7.4 added `GetActualCostRequest.resource`.
   v0.7.12 added the capability field on `SupportsRequest`.
 

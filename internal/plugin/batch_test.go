@@ -26,7 +26,7 @@ func actualBatch(resources ...*pbc.ResourceDescriptor) *pbc.BatchCostRequest {
 
 func TestBatchCostOneCallKeepsOrderAndPartialFailure(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{rows: []czclient.CostRow{
+	costs := &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 3, 15), 1, firstCZRN),
 		costRow(day(2026, 3, 15), 2, secondCZRN),
 		costRow(day(2026, 3, 15), 9, "other"),
@@ -52,7 +52,7 @@ func TestBatchCostOneCallKeepsOrderAndPartialFailure(t *testing.T) {
 
 func TestBatchCostUpstreamFailure(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{err: &czclient.APIError{Kind: czclient.KindBadRequest, Status: 400}}
+	costs := &fakeCloudZero{err: &czclient.APIError{Kind: czclient.KindBadRequest, Status: 400}}
 	resp, err := fakePlugin(readyConfig(), costs).BatchCost(context.Background(), actualBatch(resource(firstARN)))
 	require.NoError(t, err)
 	assert.Equal(t, int32(codes.InvalidArgument), resp.GetResults()[0].GetError().GetCode())
@@ -60,7 +60,7 @@ func TestBatchCostUpstreamFailure(t *testing.T) {
 
 func TestBatchCostNotReady(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{}
+	costs := &fakeCloudZero{}
 	resp, err := fakePlugin(config.Config{}, costs).BatchCost(
 		context.Background(), actualBatch(resource(firstARN), resource(secondARN)),
 	)
@@ -74,7 +74,7 @@ func TestBatchCostNotReady(t *testing.T) {
 
 func TestBatchCostProjectedEmptyAndBadWindow(t *testing.T) {
 	t.Parallel()
-	plug := fakePlugin(readyConfig(), &fakeCosts{})
+	plug := fakePlugin(readyConfig(), &fakeCloudZero{})
 	empty, err := plug.BatchCost(context.Background(), &pbc.BatchCostRequest{})
 	require.NoError(t, err)
 	assert.Empty(t, empty.GetResults())

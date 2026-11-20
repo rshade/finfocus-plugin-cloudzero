@@ -22,7 +22,7 @@ import (
 
 func TestGetActualCostSlicesMonthAndCaches(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{rows: []czclient.CostRow{
+	costs := &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 3, 1), 1, firstCZRN),
 		costRow(day(2026, 3, 15), 2, firstCZRN),
 		costRow(day(2026, 3, 20), 9, firstCZRN),
@@ -49,7 +49,7 @@ func TestGetActualCostSlicesMonthAndCaches(t *testing.T) {
 
 func TestGetActualCostSharesOneCallAcrossResources(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{rows: []czclient.CostRow{
+	costs := &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 3, 15), 1, firstCZRN),
 		costRow(day(2026, 3, 15), 2, secondCZRN),
 		costRow(day(2026, 3, 15), 9, "czrn:aws:ec2:us-east-1:123456789012:instance:other"),
@@ -75,7 +75,7 @@ func TestGetActualCostSharesOneCallAcrossResources(t *testing.T) {
 
 func TestGetActualCostMatchesResourceWithoutARN(t *testing.T) {
 	t.Parallel()
-	costs := &fakeCosts{rows: []czclient.CostRow{
+	costs := &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 11, 1), 1.07, "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-0123456789abcdef0"),
 		costRow(day(2026, 11, 1), 0.73, "czrn:aws:ec2:us-west-2:123456789012:nat-gateway:nat-0fedcba9876543210"),
 		costRow(day(2026, 11, 1), 0.33, "czrn:aws:ec2:us-west-2:123456789012:instance:i-0123456789abcdef1"),
@@ -99,7 +99,7 @@ func TestGetActualCostMatchesResourceWithoutARN(t *testing.T) {
 
 func TestGetActualCostEmptyIsNoData(t *testing.T) {
 	t.Parallel()
-	plug := fakePlugin(readyConfig(), &fakeCosts{})
+	plug := fakePlugin(readyConfig(), &fakeCloudZero{})
 	now := time.Now()
 	resp, err := plug.GetActualCost(context.Background(), actualReq(now.Add(-48*time.Hour), now, firstARN))
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func TestGetActualCostEmptyIsNoData(t *testing.T) {
 func TestGetActualCostRecentDayUsesShortTTL(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, 3, 20, 12, 0, 0, 0, time.UTC)
-	plug := fakePlugin(readyConfig(), &fakeCosts{rows: []czclient.CostRow{
+	plug := fakePlugin(readyConfig(), &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 3, 1), 3, firstCZRN),
 		costRow(day(2026, 3, 20), 4, firstCZRN),
 	}})
@@ -157,7 +157,7 @@ func TestGetActualCostRejectsBadRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			costs := &fakeCosts{}
+			costs := &fakeCloudZero{}
 			_, err := fakePlugin(tt.cfg, costs).GetActualCost(context.Background(), tt.req)
 			assert.Equal(t, tt.want, status.Code(err))
 			assert.Empty(t, costs.calls())
@@ -224,7 +224,7 @@ func TestGetActualCostIncludesRootVolume(t *testing.T) {
 		rootCZRN  = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-1"
 		otherCZRN = "czrn:aws:ec2:us-east-1:123456789012:volume:vol-2"
 	)
-	costs := &fakeCosts{rows: []czclient.CostRow{
+	costs := &fakeCloudZero{rows: []czclient.CostRow{
 		costRow(day(2026, 3, 1), 6, firstCZRN),
 		costRow(day(2026, 3, 2), 4, firstCZRN),
 		costRow(day(2026, 3, 1), 0.5, rootCZRN),
