@@ -11,12 +11,14 @@ Identify the plugin to FinFocus core and declare only what it can answer.
 `GetPluginInfo` and the `Name` RPC SHALL report the name `cloudzero`, which is
 the plugin's FinFocus registry name. `GetPluginInfo` SHALL report the providers
 `aws`, `azure`, and `gcp`, and exactly the capabilities `ACTUAL_COSTS`,
-`BATCH_COST`, and `BUDGETS`. The SDK server SHALL serve the same list.
+`BATCH_COST`, `BUDGETS`, and `RECOMMENDATIONS`. The SDK server SHALL serve the
+same list.
 
 #### Scenario: Plugin info lists every declared capability
 
 - **WHEN** core calls `GetPluginInfo`
-- **THEN** the capabilities are `ACTUAL_COSTS`, `BATCH_COST`, and `BUDGETS`, in that order
+- **THEN** the capabilities are `ACTUAL_COSTS`, `BATCH_COST`, `BUDGETS`, and
+  `RECOMMENDATIONS`, in that order
 
 #### Scenario: Reported name is the registry name
 
@@ -35,9 +37,10 @@ Tested by: TestInfoDeclaresCapabilities, TestBinaryAnnouncesPortAndCapabilities
 
 `Supports` SHALL decline, with a non-empty reason, a missing descriptor, a
 provider other than aws, azure, or gcp, any capability other than
-`ACTUAL_COSTS`, `BATCH_COST`, or `BUDGETS` (including an unspecified one), and
-a missing API key. It SHALL decline a missing resource dimension for
-`ACTUAL_COSTS` and `BATCH_COST` only. Otherwise it SHALL answer supported.
+`ACTUAL_COSTS`, `BATCH_COST`, `BUDGETS`, or `RECOMMENDATIONS` (including an
+unspecified one), and a missing API key. It SHALL decline a missing resource
+dimension for `ACTUAL_COSTS` and `BATCH_COST` only. Otherwise it SHALL answer
+supported.
 
 #### Scenario: Ready plugin supports actual cost for AWS
 
@@ -52,6 +55,11 @@ a missing API key. It SHALL decline a missing resource dimension for
 #### Scenario: Budgets need only the key
 
 - **WHEN** the key is set, no resource dimension is set, and the request is AWS budgets
+- **THEN** `Supports` answers supported
+
+#### Scenario: Recommendations need only the key
+
+- **WHEN** the key is set, no resource dimension is set, and the request is AWS recommendations
 - **THEN** `Supports` answers supported
 
 Tested by: TestSupports

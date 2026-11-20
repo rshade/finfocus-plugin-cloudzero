@@ -10,9 +10,10 @@ dimension filters.
 ### Requirement: Identity is resolved once, in a fixed order
 
 The mapper SHALL try, in order, the descriptor's `pulumi:cloudId` tag, `arn`,
-and `id`, then the legacy request `tags["pulumi:cloudId"]`, `arn`, and
-`resource_id`. The first identifier that yields a CZRN SHALL identify the
-resource. An existing `czrn:` value SHALL be used unchanged.
+`pulumi:arn` tag, `arn` tag, and `id`, then the legacy request
+`tags["pulumi:cloudId"]`, `arn`, and `resource_id`. The first identifier that
+yields a CZRN SHALL identify the resource. An existing `czrn:` value SHALL be
+used unchanged.
 
 #### Scenario: An ARN in the cloudId tag is converted
 
@@ -23,6 +24,12 @@ resource. An existing `czrn:` value SHALL be used unchanged.
 
 - **WHEN** the descriptor has an ARN and the legacy resource id is a `czrn:` value
 - **THEN** the resource id comes from the descriptor ARN
+
+#### Scenario: The ARN arrives only as a tag
+
+- **WHEN** the descriptor's `pulumi:cloudId` is `vol-1`, its `arn` field is empty,
+  and its `pulumi:arn` tag is the volume's ARN
+- **THEN** the resource id is the CZRN converted from that ARN
 
 Tested by: TestFilterIdentityPrecedence, TestFilterLegacyFieldsWhenResourceMissing
 
@@ -79,8 +86,8 @@ Tested by: TestFilterMatches, TestSupportedProvider
 Shared filters SHALL be `Account` (AWS account, Azure subscription, or GCP
 project), `Region` (descriptor region, else the ARN region), and one entry per
 configured `tagKey=dimensionID` pair whose tag is present. No dimension ID
-SHALL be inferred from a tag name. Without a configured resource dimension the
-mapper SHALL fail.
+SHALL be inferred from a tag name. Without a configured resource dimension,
+building a cost filter SHALL fail.
 
 #### Scenario: Configured tag dimension
 
@@ -107,3 +114,16 @@ matched, and a resource without that attribute SHALL be unchanged.
 - **THEN** its filter matches no volume rows
 
 Tested by: TestFilterRootVolume
+
+### Requirement: Identity resolves without the resource dimension
+
+Resolving a resource's CZRN or AWS suffix, and its provider, SHALL follow the
+same order and rules as a cost filter, and SHALL NOT need
+`CLOUDZERO_RESOURCE_DIMENSION`. Only building a cost filter needs it.
+
+#### Scenario: No resource dimension
+
+- **WHEN** no resource dimension is configured and the descriptor carries an EBS volume ARN
+- **THEN** identity resolves to the volume's CZRN
+
+Tested by: TestIdentityWithoutResourceDimension

@@ -59,6 +59,21 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
     listed without a status. Core derives percentage, forecast, and health
   - One list call per `CLOUDZERO_RECENT_TTL`, charged like a costs first page.
     `Supports` accepts `BUDGETS` with only the key set
+- **GetRecommendations()**: CloudZero's `GET /v2/optimize/recommendations`
+  - One organization-wide list per `CLOUDZERO_RECENT_TTL`, at least $0.01 over
+    30 days and every status but `addressed`. Pages and batches share it
+  - Matched to `target_resources` by `Mapper.Identity` (no resource dimension
+    needed). A match carries the target's `id` (core's URN). No targets
+    returns everything under its CZRN
+  - An instance also gets its root volume's recommendations, from
+    `attributes.rootBlockDevice.volumeId`. Core sends target attributes only
+    from rshade/finfocus#2281. `cloudzero_resource` metadata keeps the CZRN
+  - Savings are `cost_impact_last_30_days` scaled to the period. Action type
+    `OTHER`, priority unspecified: CloudZero's type and effort go in metadata
+  - `ignored` is dismissed. The SDK helpers apply visibility, filter, paging,
+    and summary, in that order
+- **DismissRecommendation()**, **GetRecommendationHistory()**:
+  `codes.Unimplemented`. Core keeps dismissals locally. Never write to CloudZero
 - **GetPricingSpec()**: `codes.Unimplemented`
 - **EstimateCost()**: `codes.Unimplemented`
 - **DryRun()**: not implemented. The plugin has no `DryRunHandler`, so the SDK server returns `Unimplemented`
@@ -94,6 +109,11 @@ The plugin implements `CostSourceService` from `finfocus-spec`:
 #### `mapping/mapping.go`
 
 - Maps a resource to CloudZero dimension IDs
+- `Identity` resolves a resource's CZRN without the resource dimension, for
+  records that name their resource directly. `Filter` adds the dimension check
+  and the shared filters
+- Core sends an ARN to `GetRecommendations` only as the `pulumi:arn` tag, so
+  identity reads that tag and `arn` after the descriptor's `arn` field
 - AWS account from the ARN, Azure subscription, GCP project
 - Tag filters come only from `CLOUDZERO_TAG_DIMENSIONS` (`tagKey=dimensionID`)
 - Does not invent dimension IDs such as `team` or `cost_center` from tag names
@@ -259,6 +279,11 @@ func TestFilterCloudIdentifiers(t *testing.T) {
   retry seconds later succeeded in under 2 seconds
 - The owner's organization has no budgets, so the budget response has not
   been seen with data
+- Repeated `status` values (`not_started`, `in_progress`, `ignored`) are
+  accepted. Every recommendation is on an instance's root volume, which is not
+  a stack resource. They name the volumes of stack version 131, replaced on
+  2026-11-18, so the current `dev` state gets none. Against the version 131
+  export, core with rshade/finfocus#2281 got six, one per instance (#29)
 
 ### Unverified
 
@@ -401,9 +426,10 @@ tag must be plain `v0.1.0` (`include-component-in-tag` is false).
   exhausts the 60 request daily budget, so the query filters only on shared
   dimensions (`Account`, `Region`, tag dimensions), never on the resource.
   `GetActualCost` and `BatchCost` share one cache entry per month and filter set.
-- Resource identity is resolved once in `mapping.Filter`, in this order:
-  descriptor `pulumi:cloudId` tag, `arn`, `id`, then the legacy request `tags`,
-  `arn`, `resource_id`. The first one that yields a CZRN wins.
+- Resource identity is resolved once in `mapping` (`Identity`, which `Filter`
+  builds on), in this order: descriptor `pulumi:cloudId` tag, `arn`,
+  `pulumi:arn` tag, `arn` tag, `id`, then the legacy request `tags`, `arn`,
+  `resource_id`. The first one that yields a CZRN wins.
 - `make cover` (`scripts/check-coverage.sh`) gates coverage at the plan.md
   CZ-15 targets: 80% overall, 95% on `internal/czclient` and `internal/plugin`.
 - `CHANGELOG.md` is not tracked until release-please creates it in the release

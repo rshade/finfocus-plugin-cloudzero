@@ -35,6 +35,7 @@ func TestInfoDeclaresCapabilities(t *testing.T) {
 		pbc.PluginCapability_PLUGIN_CAPABILITY_ACTUAL_COSTS,
 		pbc.PluginCapability_PLUGIN_CAPABILITY_BATCH_COST,
 		pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
+		pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS,
 	}, info.Capabilities)
 	logger := zerolog.Nop()
 	server := pluginsdk.NewServerWithOptions(fakePlugin(config.Config{}, &fakeCloudZero{}), nil, &logger, info)
@@ -55,12 +56,14 @@ func TestSupports(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, resp.GetSupported())
 
-	budgetsOnly := fakePlugin(config.Config{APIKey: "k"}, &fakeCloudZero{})
-	resp, err = budgetsOnly.Supports(context.Background(), &pbc.SupportsRequest{
-		Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
-	})
-	require.NoError(t, err)
-	assert.True(t, resp.GetSupported(), "budgets need only the key")
+	keyOnly := fakePlugin(config.Config{APIKey: "k"}, &fakeCloudZero{})
+	for _, capability := range []pbc.PluginCapability{
+		pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS, pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS,
+	} {
+		resp, err = keyOnly.Supports(context.Background(), &pbc.SupportsRequest{Resource: aws, Capability: capability})
+		require.NoError(t, err)
+		assert.True(t, resp.GetSupported(), "%s needs only the key", capability)
+	}
 
 	tests := []struct {
 		name string
@@ -84,10 +87,13 @@ func TestSupports(t *testing.T) {
 		{"budgets without key", fakePlugin(config.Config{}, &fakeCloudZero{}), &pbc.SupportsRequest{
 			Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_BUDGETS,
 		}},
+		{"recommendations without key", fakePlugin(config.Config{}, &fakeCloudZero{}), &pbc.SupportsRequest{
+			Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS,
+		}},
 		{
-			"recommendations",
+			"dry run",
 			ready,
-			&pbc.SupportsRequest{Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_RECOMMENDATIONS},
+			&pbc.SupportsRequest{Resource: aws, Capability: pbc.PluginCapability_PLUGIN_CAPABILITY_DRY_RUN},
 		},
 	}
 	for _, tt := range tests {
@@ -112,8 +118,8 @@ func TestUnimplementedCostRPCs(t *testing.T) {
 	assert.Equal(t, codes.Unimplemented, status.Code(err))
 }
 
-// fakeCloudZero records every cost query and budget fetch and answers with
-// fixed rows, budgets, or errors. A non-nil gate holds each call open until
+// fakeCloudZero records every cost query and budget and recommendation fetch
+// and answers with fixed rows, budgets, recommendations, or errors. A non-nil gate holds each call open until
 // the test closes it.
 type fakeCloudZero struct {
 	mu          sync.Mutex
@@ -124,6 +130,30 @@ type fakeCloudZero struct {
 	budgets     []czclient.Budget
 	budgetErr   error
 	budgetCalls int
+	recs        []czclient.Recommendation
+	recErr      error
+	recCalls    int
+}
+
+func (f *fakeCloudZero) GetRecommendations(ctx context.Context) ([]czclient.Recommendation, error) {
+	f.mu.Lock()
+	f.recCalls++
+	recs, err, gate := f.recs, f.recErr, f.gate
+	f.mu.Unlock()
+	if gate != nil {
+		select {
+		case <-gate:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	return recs, err
+}
+
+func (f *fakeCloudZero) recommendationFetches() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.recCalls
 }
 
 func (f *fakeCloudZero) GetBudgets(ctx context.Context) ([]czclient.Budget, error) {

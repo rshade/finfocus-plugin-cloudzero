@@ -1,0 +1,505 @@
+{
+  "recommendations": [
+    {
+      "recommendation_id": "CIR-AWS-00010-0000000000000000000000000000000000000001",
+      "title": "Upgradable EBS Volumes",
+      "category": "optimization",
+      "optimization_id": "CIR-AWS-00010",
+      "recommendation_type_id": "CIR-AWS-00010",
+      "recommendation_type_name": "Upgradable EBS Volumes",
+      "source": "CloudZero",
+      "effort": "low",
+      "status": "not_started",
+      "work_item": null,
+      "cost_impact_last_30_days": 0.33757025732400003,
+      "realized_savings_last_30_days": null,
+      "resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-00000000000000001",
+      "resource_type": "volume",
+      "resource_name": "vol-00000000000000001",
+      "account": [
+        "123456789012"
+      ],
+      "addressed_on_ts": null,
+      "cloud_provider": [
+        "AWS"
+      ],
+      "region": [
+        "us-west-2"
+      ],
+      "service": [
+        "AmazonEC2"
+      ],
+      "created": 1794943043,
+      "cluster": null,
+      "namespace": null,
+      "pod": null
+    },
+    {
+      "recommendation_id": "CIR-AWS-00010-0000000000000000000000000000000000000002",
+      "title": "Upgradable EBS Volumes",
+      "category": "optimization",
+      "optimization_id": "CIR-AWS-00010",
+      "recommendation_type_id": "CIR-AWS-00010",
+      "recommendation_type_name": "Upgradable EBS Volumes",
+      "source": "CloudZero",
+      "effort": "low",
+      "status": "not_started",
+      "work_item": null,
+      "cost_impact_last_30_days": 0.09002099089199998,
+      "realized_savings_last_30_days": null,
+      "resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-00000000000000002",
+      "resource_type": "volume",
+      "resource_name": "vol-00000000000000002",
+      "account": [
+        "123456789012"
+      ],
+      "addressed_on_ts": null,
+      "cloud_provider": [
+        "AWS"
+      ],
+      "region": [
+        "us-west-2"
+      ],
+      "service": [
+        "AmazonEC2"
+      ],
+      "created": 1794943043,
+      "cluster": null,
+      "namespace": null,
+      "pod": null
+    },
+    {
+      "recommendation_id": "CIR-AWS-00010-0000000000000000000000000000000000000003",
+      "title": "Upgradable EBS Volumes",
+      "category": "optimization",
+      "optimization_id": "CIR-AWS-00010",
+      "recommendation_type_id": "CIR-AWS-00010",
+      "recommendation_type_name": "Upgradable EBS Volumes",
+      "source": "CloudZero",
+      "effort": "low",
+      "status": "not_started",
+      "work_item": null,
+      "cost_impact_last_30_days": 0.090020210928,
+      "realized_savings_last_30_days": null,
+      "resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-00000000000000003",
+      "resource_type": "volume",
+      "resource_name": "vol-00000000000000003",
+      "account": [
+        "123456789012"
+      ],
+      "addressed_on_ts": null,
+      "cloud_provider": [
+        "AWS"
+      ],
+      "region": [
+        "us-west-2"
+      ],
+      "service": [
+        "AmazonEC2"
+      ],
+      "created": 1794943043,
+      "cluster": null,
+      "namespace": null,
+      "pod": null
+    },
+    {
+      "recommendation_id": "CIR-AWS-00010-0000000000000000000000000000000000000004",
+      "title": "Upgradable EBS Volumes",
+      "category": "optimization",
+      "optimization_id": "CIR-AWS-00010",
+      "recommendation_type_id": "CIR-AWS-00010",
+      "recommendation_type_name": "Upgradable EBS Volumes",
+      "source": "CloudZero",
+      "effort": "low",
+      "status": "not_started",
+      "work_item": null,
+      "cost_impact_last_30_days": 0.09001821339599997,
+      "realized_savings_last_30_days": null,
+      "resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-00000000000000004",
+      "resource_type": "volume",
+      "resource_name": "vol-00000000000000004",
+      "account": [
+        "123456789012"
+      ],
+      "addressed_on_ts": null,
+      "cloud_provider": [
+        "AWS"
+      ],
+      "region": [
+        "us-west-2"
+      ],
+      "service": [
+        "AmazonEC2"
+      ],
+      "created": 1794943043,
+      "cluster": null,
+      "namespace": null,
+      "pod": null
+    },
+    {
+      "recommendation_id": "CIR-AWS-00010-0000000000000000000000000000000000000005",
+      "title": "Upgradable EBS Volumes",
+      "category": "optimization",
+      "optimization_id": "CIR-AWS-00010",
+      "recommendation_type_id": "CIR-AWS-00010",
+      "recommendation_type_name": "Upgradable EBS Volumes",
+      "source": "CloudZero",
+      "effort": "low",
+      "status": "not_started",
+      "work_item": null,
+      "cost_impact_last_30_days": 0.08997547237199997,
+      "realized_savings_last_30_days": null,
+      "resource": "czrn:aws:ec2:us-west-2:123456789012:volume:vol-00000000000000005",
+      "resource_type": "volume",
+      "resource_name": "vol-00000000000000005",
+      "account": [
+        "123456789012"
+      ],
+      "addressed_on_ts": null,
+      "cloud_provider": [
+        "AWS"
+      ],
+      "region": [
+        "us-west-2"
+      ],
+      "service": [
+        "AmazonEC2"
+      ],
+      "created": 1794943043,
+      "cluster": null,
+      "namespace": null,
+      "pod": null
+    }
+  ],
+  "sorting": {
+    "available": {
+      "sort_keys": [
+        "recommendation_id",
+        "resource",
+        "resource_type",
+        "insight_id",
+        "cost_impact_last_30_days",
+        "realized_savings_last_30_days",
+        "title",
+        "category",
+        "source",
+        "effort",
+        "addressed_on_ts",
+        "created",
+        "recommendation_type_id",
+        "account",
+        "region",
+        "service",
+        "cloud_provider",
+        "resource_name",
+        "cluster",
+        "namespace",
+        "pod",
+        "recommendation_type_name",
+        "status",
+        "work_item"
+      ],
+      "sort_orders": [
+        "asc",
+        "desc"
+      ]
+    },
+    "current": {
+      "sort_key": "cost_impact_last_30_days",
+      "sort_order": "desc",
+      "secondary_sort_key": null,
+      "secondary_sort_order": null
+    }
+  },
+  "filtering": {
+    "available": {
+      "resource": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "resource_type": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "cost_impact_last_30_days": {
+        "type": "number",
+        "operators": [
+          "gte"
+        ],
+        "exclusiveMin": 0
+      },
+      "title": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "category": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "source": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "effort": {
+        "type": "string",
+        "operators": [
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "recommendation_type_id": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "account": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "region": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "service": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "cloud_provider": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "resource_name": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "cluster": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "namespace": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "pod": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "recommendation_type_name": {
+        "type": "string",
+        "operators": [
+          "not_contains",
+          "contains",
+          "neq",
+          "eq"
+        ],
+        "values": "*"
+      },
+      "status": {
+        "type": "string",
+        "operators": [
+          "eq",
+          "neq"
+        ],
+        "values": [
+          "not_started",
+          "in_progress",
+          "addressed",
+          "ignored"
+        ]
+      }
+    },
+    "current": {
+      "cost_impact_last_30_days": {
+        "gte": "0.01"
+      }
+    }
+  },
+  "columns": [
+    "recommendation_id",
+    "resource",
+    "resource_type",
+    "insight_id",
+    "cost_impact_last_30_days",
+    "realized_savings_last_30_days",
+    "title",
+    "category",
+    "source",
+    "effort",
+    "addressed_on_ts",
+    "created",
+    "recommendation_type_id",
+    "account",
+    "region",
+    "service",
+    "cloud_provider",
+    "resource_name",
+    "cluster",
+    "namespace",
+    "pod",
+    "recommendation_type_name",
+    "status",
+    "work_item"
+  ],
+  "multiple_value_columns": [
+    "account",
+    "region",
+    "service",
+    "cloud_provider",
+    "cluster",
+    "namespace",
+    "pod"
+  ],
+  "display_names": {
+    "recommendation_id": "Recommendation ID",
+    "resource": "Resource",
+    "resource_type": "Resource Type",
+    "insight_id": "Insight ID",
+    "cost_impact_last_30_days": "Cost Impact Last 30 Days",
+    "realized_savings_last_30_days": "Realized Savings Last 30 Days",
+    "title": "Recommendation",
+    "category": "Category",
+    "source": "Source",
+    "effort": "Effort",
+    "addressed_on_ts": "Addressed On",
+    "created": "Created",
+    "recommendation_type_id": "Recommendation Type ID",
+    "account": "Account",
+    "region": "Region",
+    "service": "Service",
+    "cloud_provider": "Cloud Provider",
+    "resource_name": "Resource Name",
+    "cluster": "Cluster",
+    "namespace": "Namespace",
+    "pod": "Pod",
+    "recommendation_type_name": "Recommendation Type",
+    "status": "Status",
+    "work_item": "Work Item"
+  },
+  "pagination": {
+    "page_count": 2,
+    "item_count": 5,
+    "total_count": 8,
+    "cursor": {
+      "next_cursor": "opaque-cursor-page-2",
+      "previous_cursor": null,
+      "has_next": true,
+      "has_previous": false
+    }
+  },
+  "unique_recommendations": {
+    "total_count": 8,
+    "total_cost_impact_last_30_days": 0.8275786172800002
+  },
+  "grouping": {
+    "available": [
+      "recommendation_id",
+      "resource",
+      "resource_type",
+      "insight_id",
+      "title",
+      "category",
+      "source",
+      "effort",
+      "addressed_on_ts",
+      "created",
+      "recommendation_type_id",
+      "account",
+      "region",
+      "service",
+      "cloud_provider",
+      "resource_name",
+      "cluster",
+      "namespace",
+      "pod",
+      "recommendation_type_name",
+      "status",
+      "work_item"
+    ],
+    "current": [],
+    "max_group_by_columns": 2
+  }
+}

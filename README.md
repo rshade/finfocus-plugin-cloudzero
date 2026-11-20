@@ -1,7 +1,7 @@
 # FinFocus CloudZero Plugin
 
-FinFocus plugin that reads historical cost and budgets from the CloudZero REST
-API v2. Cost covers AWS, Azure, and GCP resources when a resource-level
+FinFocus plugin that reads historical cost, budgets, and optimization
+recommendations from the CloudZero REST API v2. Cost covers AWS, Azure, and GCP resources when a resource-level
 CloudZero dimension is configured.
 
 ## v0.1.0 limitations
@@ -43,10 +43,13 @@ Live checks belong to the owner. `make test-integration` skips unless
 | GetActualCost | Daily rows from `GET /v2/billing/costs` |
 | BatchCost | Actual cost only. One upstream call per filter group |
 | GetBudgets | CloudZero's monthly budgets with this month's spend, from `GET /v2/budgets` |
+| GetRecommendations | CloudZero's recommendations for the requested resources, from `GET /v2/optimize/recommendations` |
 | GetProjectedCost, GetPricingSpec, EstimateCost | `Unimplemented` |
-| Supports | Actual cost for AWS, Azure, and GCP when a key and a resource dimension are set. Budgets when a key is set |
+| DismissRecommendation, GetRecommendationHistory | `Unimplemented`. Core keeps dismissals itself |
+| Supports | Actual cost for AWS, Azure, and GCP when a key and a resource dimension are set. Budgets and recommendations when a key is set |
 
-`GetPluginInfo` advertises `ACTUAL_COSTS`, `BATCH_COST`, and `BUDGETS`. The plugin
+`GetPluginInfo` advertises `ACTUAL_COSTS`, `BATCH_COST`, `BUDGETS`, and
+`RECOMMENDATIONS`. The plugin
 reports the name `cloudzero`, its registry name, so `--adapter cloudzero`
 selects it.
 
@@ -75,6 +78,45 @@ response has not been seen with data from a live account yet.
 A budget's source is `cloudzero`, so a FinFocus provider filter such as `aws`
 hides it: a CloudZero budget can cover several providers.
 
+### Recommendations
+
+`GetRecommendations` returns the optimization recommendations CloudZero has
+made for the resources core asks about. Each recommendation names its resource
+as a CZRN, which is matched to core's target resources the same way cost rows
+are: from `pulumi:cloudId`, an ARN (the descriptor's, or its `pulumi:arn` or
+`arn` tag), or a bare AWS id such as `vol-0abc`. A match carries the target's
+id, so core attaches it to that resource. With no targets, every
+recommendation is returned under its CZRN. No resource dimension is needed.
+
+The plugin asks for every recommendation worth at least $0.01 over the last
+30 days. CloudZero's own default floor is $1.00, which hid every
+recommendation on the account this was checked against. Raise the floor in
+core with its minimum-savings filter. The estimated savings are CloudZero's
+30-day cost impact, taken as monthly and scaled for `daily` or `annual`
+requests, in `CLOUDZERO_CURRENCY`. CloudZero's title is the description, and
+its recommendation type, effort, status, accounts, and resource CZRN
+(`cloudzero_resource`) are kept in metadata.
+The plugin does not guess an action type or a priority.
+
+CloudZero's `ignored` recommendations count as dismissed: core sees them only
+when it asks for dismissed recommendations. `addressed` ones are never
+returned. Dismissing a recommendation in FinFocus is kept by core; the plugin
+never changes anything in CloudZero.
+
+The list comes from one call, cached for `CLOUDZERO_RECENT_TTL` and shared by
+every page and batch core asks for. That call spends one request from
+`CLOUDZERO_DAILY_BUDGET`. Only CloudZero's "Upgradable EBS Volumes" type has
+been seen live.
+
+A recommendation on an EC2 instance's root volume is shown on the instance,
+as actual cost adds the root volume's cost to it. CloudZero names the volume,
+which is not a resource in the stack, so the plugin reads the instance's
+`rootBlockDevice.volumeId` from the attributes core sends with the request;
+`cloudzero_resource` still names the disk. This needs a FinFocus core that
+sends attributes on recommendation targets (rshade/finfocus#2281). With an
+older core, root-volume recommendations are not shown. Data volumes are not
+attached.
+
 ## Configuration
 
 The process starts without a key. Cost calls then return `FailedPrecondition`.
@@ -97,8 +139,8 @@ the AWS Cost Explorer plugin.
 
 The key needs the fixed scopes `billing:read_costs` and
 `billing:read_dimensions`. Add `billing:read_resource_tags` only if you also
-read tags. The budgets page names no scope; a key with these scopes read
-budgets on 2026-11-19. The costs call sends the key as a bare `Authorization` value.
+read tags. The budgets and recommendations pages name no scope; a key with
+these scopes read both on 2026-11-19. The costs call sends the key as a bare `Authorization` value.
 There is no `Bearer` prefix.
 
 `CLOUDZERO_TAG_DIMENSIONS` does not invent dimension IDs from tag names. Map

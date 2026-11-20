@@ -74,11 +74,21 @@ func NewMapper(logger zerolog.Logger, tagDimensions map[string]string, resourceD
 	return &Mapper{logger: logger, tagDimensions: copied, resourceDimension: resourceDimension}
 }
 
-// Filter builds filters for a descriptor. Identifiers are tried in order: the
-// descriptor's pulumi:cloudId tag, ARN, and ID, then the legacy tags, arn,
-// and resourceID fields. The first one that yields a CZRN identifies the
-// resource. When none does, an AWS resource with a known id prefix and a
-// region is matched by CZRN suffix instead.
+// Identity resolves a descriptor's CZRN, or its AWS suffix, its provider, and
+// an instance's root volume, in the same order and with the same rules as
+// Filter. It needs no resource
+// dimension and builds no shared filters, so it suits CloudZero records that
+// name their resource directly, such as recommendations.
+func (m *Mapper) Identity(resource *pbc.ResourceDescriptor) (Filter, error) {
+	filter, _, _, err := m.identity(resource, nil, "", "")
+	return filter, err
+}
+
+// Filter builds the cost filter for a descriptor. Identifiers are tried in
+// order: the descriptor's pulumi:cloudId tag, ARN, pulumi:arn and arn tags,
+// and ID, then the legacy tags, arn, and resourceID fields. The first one that
+// yields a CZRN identifies the resource. When none does, an AWS resource with
+// a known id prefix and a region is matched by CZRN suffix instead.
 func (m *Mapper) Filter(
 	resource *pbc.ResourceDescriptor,
 	tags map[string]string,
@@ -87,23 +97,11 @@ func (m *Mapper) Filter(
 	if m.resourceDimension == "" {
 		return Filter{}, errors.New("resource dimension is not configured")
 	}
-	ids := identifiersOf(resource, tags, arn, resourceID)
-	region := ids.region(resource)
-	provider, _ := providerKey(resource.GetProvider())
-	filter := Filter{
-		Shared: map[string]string{}, ResourceID: "", ResourceSuffix: "", Provider: provider, RootVolumeSuffix: "",
+	filter, ids, region, err := m.identity(resource, tags, arn, resourceID)
+	if err != nil {
+		return Filter{}, err
 	}
-	if provider == awsProvider {
-		filter.RootVolumeSuffix = rootVolumeSuffix(resource)
-	}
-	if id, ok := ids.czrn(region); ok {
-		filter.ResourceID = id
-	} else if suffix, found := ids.awsSuffix(); found && provider == awsProvider && region != "" {
-		filter.ResourceSuffix = suffix
-	} else {
-		return Filter{}, errors.New("cannot build a czrn for this resource")
-	}
-	shared := filter.Shared
+	shared := map[string]string{}
 	if account := ids.account(); account != "" {
 		shared["Account"] = account
 	} else if ids.firstARN() != "" {
@@ -113,7 +111,33 @@ func (m *Mapper) Filter(
 		shared["Region"] = region
 	}
 	m.addTagFilters(shared, resource, tags)
+	filter.Shared = shared
 	return filter, nil
+}
+
+// identity resolves the resource id or suffix, the provider, and an AWS
+// resource's root volume, and returns the identifiers and region it used so
+// Filter can build shared filters.
+func (m *Mapper) identity(
+	resource *pbc.ResourceDescriptor,
+	tags map[string]string,
+	arn, resourceID string,
+) (Filter, identifiers, string, error) {
+	ids := identifiersOf(resource, tags, arn, resourceID)
+	region := ids.region(resource)
+	provider, _ := providerKey(resource.GetProvider())
+	filter := Filter{Shared: nil, ResourceID: "", ResourceSuffix: "", Provider: provider, RootVolumeSuffix: ""}
+	if id, ok := ids.czrn(region); ok {
+		filter.ResourceID = id
+	} else if suffix, found := ids.awsSuffix(); found && provider == awsProvider && region != "" {
+		filter.ResourceSuffix = suffix
+	} else {
+		return Filter{}, nil, "", errors.New("cannot build a czrn for this resource")
+	}
+	if provider == awsProvider {
+		filter.RootVolumeSuffix = rootVolumeSuffix(resource)
+	}
+	return filter, ids, region, nil
 }
 
 // rootVolumeSuffix reads attributes.rootBlockDevice.volumeId, an object or a
@@ -150,9 +174,10 @@ func (m *Mapper) addTagFilters(shared map[string]string, resource *pbc.ResourceD
 type identifiers []string
 
 func identifiersOf(resource *pbc.ResourceDescriptor, tags map[string]string, arn, resourceID string) identifiers {
+	descriptorTags := resource.GetTags()
 	return identifiers{
-		resource.GetTags()[cloudIDTag], resource.GetArn(), resource.GetId(),
-		tags[cloudIDTag], arn, resourceID,
+		descriptorTags[cloudIDTag], resource.GetArn(), descriptorTags[pulumiARNTag], descriptorTags[arnTag],
+		resource.GetId(), tags[cloudIDTag], arn, resourceID,
 	}
 }
 

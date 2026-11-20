@@ -85,7 +85,8 @@ legacy `tags`, `arn`, and `resource_id` fields when no descriptor is sent.
 **Resource identity**: the plugin tries these identifiers in order and uses
 the first one that yields a CloudZero resource name (CZRN):
 
-1. The `pulumi:cloudId` tag, `arn`, and `id` on the descriptor
+1. The `pulumi:cloudId` tag, `arn`, `pulumi:arn` tag, `arn` tag, and `id` on
+   the descriptor
 2. The legacy `tags["pulumi:cloudId"]`, `arn`, and `resource_id`
 
 An identifier that already starts with `czrn:` is used unchanged. An AWS ARN
@@ -250,6 +251,37 @@ on a live account. See the README "v0.1.0 limitations" section.
   Enabled alerts become actual-spend thresholds. Core derives percentage used,
   forecast, and health, so the plugin never forecasts
 
+### Recommendations endpoint
+
+- **Status**: checked live on 2026-11-19 with the existing read key: HTTP 200,
+  eight "Upgradable EBS Volumes" (`CIR-AWS-00010`) rows worth $0.83 together.
+  The first call returned HTTP 504 and a retry seconds later succeeded.
+  Through core the same day, the repeated `status` values were accepted. All
+  of the recommendations are on the root volumes of the instances in stack
+  version 131, which were replaced on 2026-11-18. With a core that sends
+  target attributes (rshade/finfocus#2281), the version 131 state got all six
+  open recommendations, one per instance (#29)
+- **Endpoint**: `GET /v2/optimize/recommendations` with
+  `cost_impact_last_30_days[gte]=0.01` and repeated `status` values
+  `not_started`, `in_progress`, and `ignored`. CloudZero's default floor of
+  1.00 returned nothing on that account. Paged by the same cursor as costs.
+  The first page spends one request from `CLOUDZERO_DAILY_BUDGET`
+- **Row**: `recommendation_id`, `title`, `recommendation_type_id` and `_name`,
+  `effort`, `status`, `resource` (a CZRN), `resource_type`, `resource_name`,
+  `cost_impact_last_30_days`, `created` (Unix seconds), and the lists
+  `account`, `region`, and `cloud_provider`. Rows without an id or resource
+  are dropped
+- **Mapping**: one organization-wide fetch, matched to core's
+  `target_resources` with `Mapper.Identity` and `Filter.Matches`, so a
+  resource needs no resource dimension. An instance also matches its root
+  volume, named by `attributes.rootBlockDevice.volumeId`
+  (`Filter.MatchesRootVolume`). A match carries the target's id, and
+  `cloudzero_resource` keeps the CZRN.
+  Category cost, action type other, priority unspecified. Savings are the
+  cost impact scaled from 30 days to the requested period. `ignored` ids go to
+  the SDK's dismissed list, then the SDK applies the filter, paging, and
+  summary
+
 ### Verified on a live account (2026-11-17)
 
 - Bare-key auth and the costs response shape
@@ -295,6 +327,7 @@ documented as dimension values.
 | API key missing | FailedPrecondition | "set CLOUDZERO_API_KEY" | n/a |
 | Resource dimension unset | FailedPrecondition | "set CLOUDZERO_RESOURCE_DIMENSION" | n/a |
 | Missing cloud id or bad window | InvalidArgument | fixed text with no key, URL, or body | n/a |
+| Bad `page_token` or `projection_period` | InvalidArgument | "invalid page_token", or the accepted periods | n/a |
 | HTTP 401 or 403 | PermissionDenied | "CloudZero rejected the API key" | n/a |
 | HTTP 429 | ResourceExhausted | "60 requests in a rolling 24 hours; retry in N minutes", or "retry later" when the body states no wait | n/a |
 | Budget spent | ResourceExhausted | "budget is exhausted; retry tomorrow" | n/a |
@@ -318,7 +351,7 @@ documented as dimension values.
 - Cursor pagination, a short retry, and a per-process request budget
 - Plugin-side month cache
 
-### Next
+### After v0.1.1
 
 - Budgets from `GET /v2/budgets` (`add-cloudzero-budgets`)
 - Recommendations from `GET /v2/optimize/recommendations`
