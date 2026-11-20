@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.2](https://github.com/rshade/finfocus-plugin-cloudzero/compare/v0.1.1...v0.1.2) (2026-11-20)
+
+
+### Features
+
+* serve CloudZero monthly budgets through GetBudgets ([55c7476](https://github.com/rshade/finfocus-plugin-cloudzero/commit/55c74764d8ccf4d984f4451c0d2ead40447d1305))
+* serve CloudZero recommendations, including root-volume ones on their instance ([930497b](https://github.com/rshade/finfocus-plugin-cloudzero/commit/930497b7797266a8e7c5dab087058987aab0cb13)), closes [#29](https://github.com/rshade/finfocus-plugin-cloudzero/issues/29)
+
+
+### Documentation
+
+* promote [#9](https://github.com/rshade/finfocus-plugin-cloudzero/issues/9) and track the cooldown follow-up ([4909ce9](https://github.com/rshade/finfocus-plugin-cloudzero/commit/4909ce93737c56bd73709136de5ad1e0d278afec))
+* sync the roadmap after v0.1.1 ([21d27f8](https://github.com/rshade/finfocus-plugin-cloudzero/commit/21d27f887dad59a99631a21e884779baf5075ea3))
+
 ## [0.1.1](https://github.com/rshade/finfocus-plugin-cloudzero/compare/v0.1.0...v0.1.1) (2026-11-19)
 
 
