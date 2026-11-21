@@ -42,8 +42,18 @@ func TestInfoDeclaresCapabilities(t *testing.T) {
 	got, err := server.GetPluginInfo(context.Background(), &pbc.GetPluginInfoRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, info.Capabilities, got.GetCapabilities())
-	assert.Equal(t, "cloudzero", got.GetName())
-	assert.Equal(t, "cloudzero", fakePlugin(config.Config{}, &fakeCloudZero{}).Name())
+}
+
+func TestPluginNameIsTheInstallName(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, "cloudzero", PluginName, "PluginName must equal the install name")
+	assert.Equal(t, PluginName, fakePlugin(config.Config{}, &fakeCloudZero{}).Name())
+	assert.Equal(t, PluginName, Info("0.1.0").Name)
+	logger := zerolog.Nop()
+	server := pluginsdk.NewServerWithOptions(fakePlugin(config.Config{}, &fakeCloudZero{}), nil, &logger, Info("0.1.0"))
+	got, err := server.GetPluginInfo(context.Background(), &pbc.GetPluginInfoRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, PluginName, got.GetName())
 }
 
 func TestSupports(t *testing.T) {
