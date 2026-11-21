@@ -17,8 +17,11 @@ import (
 	"github.com/rshade/finfocus-plugin-cloudzero/internal/mapping"
 )
 
+// PluginName is the plugin's install name. Every place the plugin states its
+// name uses it.
+const PluginName = "cloudzero"
+
 const (
-	pluginName       = "cloudzero"
 	defaultBatchSize = 100
 	keyNotSet        = "set CLOUDZERO_API_KEY"
 )
@@ -82,14 +85,14 @@ func New(version string, cfg config.Config, client CloudZero, logger zerolog.Log
 
 // Name returns the plugin identifier the SDK reports to core.
 func (p *CloudZeroPlugin) Name() string {
-	return pluginName
+	return PluginName
 }
 
 // Info is the metadata served by GetPluginInfo. Capabilities are actual cost,
 // batch actual cost, budgets, and recommendations.
 func Info(version string) *pluginsdk.PluginInfo {
 	return &pluginsdk.PluginInfo{
-		Name:        pluginName,
+		Name:        PluginName,
 		Version:     version,
 		SpecVersion: pluginsdk.SpecVersion,
 		Providers:   []string{"aws", "azure", "gcp"},

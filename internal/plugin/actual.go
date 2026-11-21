@@ -142,7 +142,7 @@ func (p *CloudZeroPlugin) rowsFor(
 	filter mapping.Filter,
 	start, end time.Time,
 ) []*pbc.ActualCostResult {
-	source := "cloudzero:" + p.cfg.CostType + " " + p.cfg.Currency
+	source := PluginName + ":" + p.cfg.CostType + " " + p.cfg.Currency
 	out := make([]*pbc.ActualCostResult, 0, len(rows))
 	for _, row := range rows {
 		resource, provider := row.Dimensions[p.cfg.ResourceDimension], row.Dimensions[cloudProviderDimension]

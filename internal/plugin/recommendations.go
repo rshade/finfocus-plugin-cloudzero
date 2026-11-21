@@ -175,7 +175,7 @@ func (p *CloudZeroPlugin) recommendationFor(
 		},
 		Priority:    pbc.RecommendationPriority_RECOMMENDATION_PRIORITY_UNSPECIFIED,
 		Description: rec.Title,
-		Source:      pluginName,
+		Source:      PluginName,
 		Metadata:    recommendationMetadata(rec),
 	}
 	if !rec.Created.IsZero() {

@@ -93,7 +93,7 @@ func (p *CloudZeroPlugin) budgetFor(b czclient.Budget, month time.Time) (*pbc.Bu
 	budget := &pbc.Budget{
 		Id:         b.ID,
 		Name:       b.Name,
-		Source:     pluginName,
+		Source:     PluginName,
 		Amount:     &pbc.BudgetAmount{Limit: limit, Currency: p.cfg.Currency},
 		Period:     pbc.BudgetPeriod_BUDGET_PERIOD_MONTHLY,
 		Thresholds: thresholdsFor(b.Alerts),

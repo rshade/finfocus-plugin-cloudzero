@@ -33,7 +33,7 @@ func run() error {
 		}
 	}
 
-	logger := pluginsdk.NewPluginLogger("cloudzero", version, level, nil)
+	logger := pluginsdk.NewPluginLogger(plugin.PluginName, version, level, nil)
 
 	port := pluginsdk.ParsePortFlag()
 	if port == 0 {
