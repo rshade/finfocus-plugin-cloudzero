@@ -34,7 +34,7 @@ vale = "3.27.0"
 # ---------------------------------------------------------------- openspec
 # Spec-driven change process. Run it as `mise exec -- openspec ...`.
 # The tool id is the npm package, not `openspec`.
-"npm:@fission-ai/openspec" = "2.1.0"
+"npm:@fission-ai/openspec" = "2.2.0"
 
 # GitHub Actions review comments (via the aqua registry).
 "aqua:reviewdog/reviewdog" = "0.21.3"
